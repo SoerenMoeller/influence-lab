@@ -1,0 +1,94 @@
+<script lang="ts">
+    import * as d3 from "d3";
+    import { onMount } from "svelte";
+
+    let container: HTMLDivElement;
+        
+    // Declare the chart dimensions and margins.
+    const width = 640;
+    const height = 400;
+    const marginTop = 20;
+    const marginRight = 20;
+    const marginBottom = 30;
+    const marginLeft = 40;
+
+    // Declare the x (horizontal position) scale.
+    const x = d3.scaleUtc()
+        .domain([new Date("2023-01-01"), new Date("2024-01-01")])
+        .range([marginLeft, width - marginRight]);
+
+    // Declare the y (vertical position) scale.
+    const y = d3.scaleLinear()
+        .domain([0, 100])
+        .range([height - marginBottom, marginTop]);
+
+    onMount(() => {
+        // Create the SVG container.
+        const svg = d3.create("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // Add the x-axis.
+        svg.append("g")
+            .attr("transform", `translate(0,${height - marginBottom})`)
+            .call(d3.axisBottom(x));
+
+        // Add the y-axis.
+        const gy = svg.append("g")
+            .attr("transform", `translate(${marginLeft},0)`)
+            .call(d3.axisLeft(y));
+
+        svg.append("rect")
+            .attr("width", 20)
+            .attr("height", 20)
+            .attr("x", 200)
+            .attr("y", 20)
+            .attr("fill-opacity", 0)
+            .attr("stroke", "black");
+
+        y.domain([-100, 200]);
+
+        gy.transition()
+            .duration(750)
+            .call(d3.axisLeft(y));
+            
+        // Append the SVG element.
+        container.append(svg.node());
+
+        const rectDrawState = {
+            startPosition: {
+                x: 0,
+                y: 0
+            },
+            endPosition: {
+                x: 0,
+                y: 0
+            },
+            isDrawing: false,
+        }
+        
+        svg.on("mousedown", (event) => {
+            console.log("Started drawing");
+            const [x, y] = d3.pointer(event);
+            rectDrawState.isDrawing = true;
+            rectDrawState.startPosition.x = x;
+            rectDrawState.startPosition.y = y;
+        });
+
+        svg.on("mousemove", (event) => {
+            if (!rectDrawState.isDrawing) return;
+            const [x, y] = d3.pointer(event);
+            rectDrawState.endPosition.x = x;
+            rectDrawState.endPosition.y = y;
+        });
+
+        svg.on("mouseup", (event) => {
+            if (!rectDrawState.isDrawing) return;
+            rectDrawState.isDrawing = false;
+            console.log(`Start: (${rectDrawState.startPosition.x}, ${rectDrawState.startPosition.y}), 
+                         End: (${rectDrawState.endPosition.x}, ${rectDrawState.endPosition.y})`)
+        })
+    });
+</script>
+
+<div bind:this={container}></div>
