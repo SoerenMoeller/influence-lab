@@ -1,6 +1,7 @@
 <script lang="ts">
     import * as d3 from "d3";
     import { onMount } from "svelte";
+    import * as drawRect from "$modules/svg-utils/draw-rect";
 
     let container: HTMLDivElement;
         
@@ -55,39 +56,7 @@
         // Append the SVG element.
         container.append(svg.node());
 
-        const rectDrawState = {
-            startPosition: {
-                x: 0,
-                y: 0
-            },
-            endPosition: {
-                x: 0,
-                y: 0
-            },
-            isDrawing: false,
-        }
-        
-        svg.on("mousedown", (event) => {
-            console.log("Started drawing");
-            const [x, y] = d3.pointer(event);
-            rectDrawState.isDrawing = true;
-            rectDrawState.startPosition.x = x;
-            rectDrawState.startPosition.y = y;
-        });
-
-        svg.on("mousemove", (event) => {
-            if (!rectDrawState.isDrawing) return;
-            const [x, y] = d3.pointer(event);
-            rectDrawState.endPosition.x = x;
-            rectDrawState.endPosition.y = y;
-        });
-
-        svg.on("mouseup", (event) => {
-            if (!rectDrawState.isDrawing) return;
-            rectDrawState.isDrawing = false;
-            console.log(`Start: (${rectDrawState.startPosition.x}, ${rectDrawState.startPosition.y}), 
-                         End: (${rectDrawState.endPosition.x}, ${rectDrawState.endPosition.y})`)
-        })
+        drawRect.init(svg);
     });
 </script>
 

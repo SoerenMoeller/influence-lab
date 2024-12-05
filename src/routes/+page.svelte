@@ -1,6 +1,5 @@
 <script lang="ts">
-    import { Components } from "$lib";
-    const { GraphContainer } = Components;
+    import GraphContainer from "$components/GraphContainer.svelte";
 </script>
 
 <h1 
