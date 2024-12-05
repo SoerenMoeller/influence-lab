@@ -17,7 +17,12 @@ const config = {
             fallback: undefined,
             precompress: false,
             strict: true
-        })
+        }),
+        alias: {
+            '$types': './src/types',
+            '$modules': './src/lib/modules',
+            '$components': './src/lib/components',
+        }
 	}
 };
 
