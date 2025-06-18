@@ -6,8 +6,8 @@
     let container: HTMLDivElement;
         
     // Declare the chart dimensions and margins.
-    const width = 640;
-    const height = 400;
+    const width = 1080;
+    const height = 720;
     const marginTop = 20;
     const marginRight = 20;
     const marginBottom = 30;
@@ -60,4 +60,6 @@
     });
 </script>
 
-<div bind:this={container}></div>
+<div 
+    bind:this={container}
+    class="flex w-full justify-center items-center"></div>
