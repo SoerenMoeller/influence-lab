@@ -4,35 +4,47 @@
 
     let container: HTMLDivElement;
     let { scheme } = $props();
+    
+    const map: Map<string, Map<string, Scheme>> = new Map<string, Map<string, Scheme>>();
+    for (const st of scheme) {
+        if (!map.has(st.variableFrom)) {
+            map.set(st.variableFrom, new Map<string, Scheme>());
+        }
+        if (!map.get(st.variableFrom)!.has(st.variableTo)) {
+            map.get(st.variableFrom)!.set(st.variableTo, []);
+        }
+        map.get(st.variableFrom)!.get(st.variableTo)!.push(st);
+    }
         
     // Declare the chart dimensions and margins.
-    const width = 1080;
-    const height = 720;
-    const marginTop = 20;
-    const marginRight = 20;
-    const marginBottom = 30;
-    const marginLeft = 40;
+    function createPlot(variableFrom: string, variableTo: string, scheme: Scheme) {
+        const width = 1080;
+        const height = 720;
+        const marginTop = 10;
+        const marginRight = 20;
+        const marginBottom = 80;
+        const marginLeft = 80;
 
-    const minValueDomain = Math.min(...scheme.map((st: Statement) => st.domain.start));
-    const maxValueDomain = Math.max(...scheme.map((st: Statement) => st.domain.end));
-    const minValueRange = Math.min(...scheme.map((st: Statement) => st.range.start));
-    const maxValueRange = Math.max(...scheme.map((st: Statement) => st.range.end));
+        const minValueDomain = Math.min(...scheme.map((st: Statement) => st.domain.start));
+        const maxValueDomain = Math.max(...scheme.map((st: Statement) => st.domain.end));
+        const minValueRange = Math.min(...scheme.map((st: Statement) => st.range.start));
+        const maxValueRange = Math.max(...scheme.map((st: Statement) => st.range.end));
 
-    // Declare the x (horizontal position) scale.
-    const x = d3.scaleLinear()
-        .domain([minValueDomain - 1, maxValueDomain + 1])
-        .range([marginLeft, width - marginRight]);
+        // Declare the x (horizontal position) scale.
+        const x = d3.scaleLinear()
+            .domain([minValueDomain - 1, maxValueDomain + 1])
+            .range([marginLeft, width - marginRight]);
 
-    // Declare the y (vertical position) scale.
-    const y = d3.scaleLinear()
-        .domain([minValueRange - 1, maxValueRange + 1])
-        .range([height - marginBottom, marginTop]);
-
-    onMount(() => {
+        // Declare the y (vertical position) scale.
+        const y = d3.scaleLinear()
+            .domain([minValueRange - 1, maxValueRange + 1])
+            .range([height - marginBottom, marginTop]);
+            
         // Create the SVG container.
         const svg = d3.create("svg")
-            .attr("width", width)
-            .attr("height", height);
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            .attr("preserveAspectRatio", "xMidYMin meet")
+            .attr("class", "w-full h-auto block");
 
         // Add the x-axis.
         svg.append("g")
@@ -60,23 +72,37 @@
                 .attr("x", x(st.domain.start) + (x(st.domain.end) - x(st.domain.start)) / 2 - 15)
                 .attr("y", y(st.range.end) + (y(st.range.start) - y(st.range.end)) / 2 - 15);
         }
-        //svg.append("rect")
-        //    .attr("width", 20)
-        //    .attr("height", 20)
-        //    .attr("x", 200)
-        //    .attr("y", 20)
-        //    .attr("fill-opacity", 0)
-        //    .attr("stroke", "black");
 
-        //gy.transition()
-        //    .duration(750)
-        //    .call(d3.axisLeft(y));
-            
+        svg.append("text")
+            .attr("x", marginLeft)
+            .attr("y", height / 2)
+            .attr("fill", "black")
+            .attr("font-size", "24px")
+            .attr("transform", `rotate(-90, ${marginLeft / 2}, ${height / 2})`)
+            .text(variableTo)
+
+        svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", height - marginBottom / 2)
+            .attr("fill", "black")
+            .attr("font-size", "24px")
+            .text(variableFrom);
+
         // Append the SVG element.
-        container.append(svg.node());
+        container.append(svg.node() as Node);
+    }
+
+    onMount(() => {
+        for (const [variableFrom, map2] of map) {
+            for (const [variableTo, subScheme] of map2) {
+                createPlot(variableFrom, variableTo, subScheme);
+            }
+        }
     });
 </script>
 
 <div 
     bind:this={container}
-    class="flex w-full justify-center items-center"></div>
+    class="w-full"
+>
+</div>

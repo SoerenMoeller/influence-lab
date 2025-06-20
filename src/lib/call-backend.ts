@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 
 export async function callHaskell(): Promise<Scheme> {  
     return new Promise((resolve, reject) => {
-        const process = spawn('cabal', ['run']); 
+        const process = spawn('cabal', ['exec', '--', 'get-scheme']); 
 
         let output: string = '';
         let error: string = '';
