@@ -18,6 +18,8 @@ declare global {
         range:        Interval;
         variableTo:   string;
     }
+
+    type Scheme = Statement[];
 }
 
 export {};

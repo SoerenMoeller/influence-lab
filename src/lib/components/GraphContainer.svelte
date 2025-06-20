@@ -1,9 +1,9 @@
 <script lang="ts">
     import * as d3 from "d3";
     import { onMount } from "svelte";
-    import * as drawRect from "$modules/svg-utils/draw-rect";
 
     let container: HTMLDivElement;
+    let { scheme } = $props();
         
     // Declare the chart dimensions and margins.
     const width = 1080;
@@ -13,14 +13,19 @@
     const marginBottom = 30;
     const marginLeft = 40;
 
+    const minValueDomain = Math.min(...scheme.map((st: Statement) => st.domain.start));
+    const maxValueDomain = Math.max(...scheme.map((st: Statement) => st.domain.end));
+    const minValueRange = Math.min(...scheme.map((st: Statement) => st.range.start));
+    const maxValueRange = Math.max(...scheme.map((st: Statement) => st.range.end));
+
     // Declare the x (horizontal position) scale.
-    const x = d3.scaleUtc()
-        .domain([new Date("2023-01-01"), new Date("2024-01-01")])
+    const x = d3.scaleLinear()
+        .domain([minValueDomain - 1, maxValueDomain + 1])
         .range([marginLeft, width - marginRight]);
 
     // Declare the y (vertical position) scale.
     const y = d3.scaleLinear()
-        .domain([0, 100])
+        .domain([minValueRange - 1, maxValueRange + 1])
         .range([height - marginBottom, marginTop]);
 
     onMount(() => {
@@ -35,28 +40,40 @@
             .call(d3.axisBottom(x));
 
         // Add the y-axis.
-        const gy = svg.append("g")
+        svg.append("g")
             .attr("transform", `translate(${marginLeft},0)`)
             .call(d3.axisLeft(y));
 
-        svg.append("rect")
-            .attr("width", 20)
-            .attr("height", 20)
-            .attr("x", 200)
-            .attr("y", 20)
-            .attr("fill-opacity", 0)
-            .attr("stroke", "black");
+        for (const st of scheme) {
+            svg.append("rect")
+                .attr("width", x(st.domain.end) - x(st.domain.start))
+                .attr("height", y(st.range.start) - y(st.range.end))
+                .attr("x", x(st.domain.start))
+                .attr("y", y(st.range.end))
+                .attr("fill-opacity", 0)
+                .attr("stroke", "black");
 
-        y.domain([-100, 200]);
+            svg.append("image")
+                .attr("href", `/${st.behaviour.toLowerCase()}.svg`)
+                .attr("width", 30)
+                .attr("height", 30)
+                .attr("x", x(st.domain.start) + (x(st.domain.end) - x(st.domain.start)) / 2 - 15)
+                .attr("y", y(st.range.end) + (y(st.range.start) - y(st.range.end)) / 2 - 15);
+        }
+        //svg.append("rect")
+        //    .attr("width", 20)
+        //    .attr("height", 20)
+        //    .attr("x", 200)
+        //    .attr("y", 20)
+        //    .attr("fill-opacity", 0)
+        //    .attr("stroke", "black");
 
-        gy.transition()
-            .duration(750)
-            .call(d3.axisLeft(y));
+        //gy.transition()
+        //    .duration(750)
+        //    .call(d3.axisLeft(y));
             
         // Append the SVG element.
         container.append(svg.node());
-
-        drawRect.init(svg);
     });
 </script>
 

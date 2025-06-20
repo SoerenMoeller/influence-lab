@@ -1,6 +1,6 @@
 import { spawn } from 'child_process';
 
-export async function callHaskell(): Promise<Statement[]> {  
+export async function callHaskell(): Promise<Scheme> {  
     return new Promise((resolve, reject) => {
         const process = spawn('cabal', ['run']); 
 
@@ -22,7 +22,8 @@ export async function callHaskell(): Promise<Statement[]> {
             } 
             
             try {
-                resolve(JSON.parse(output));
+                const scheme: Scheme = JSON.parse(JSON.parse(output)) as Scheme;
+                resolve(scheme);
             } catch (e) {
                 reject(new Response(JSON.stringify({ error: 'Invalid JSON output' }), { status: 500 }));
             }
