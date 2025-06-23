@@ -1,5 +1,7 @@
-<script>
+<script lang="ts">
     import "../app.css";
 </script>
 
-<slot />
+<div class="bg-gray-100 min-h-screen">
+    <slot />
+</div> 

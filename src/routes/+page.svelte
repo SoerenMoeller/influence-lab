@@ -1,14 +1,74 @@
-<script>
+<script lang="ts">
     import GraphContainer from "$components/GraphContainer.svelte";
+    import Notification from "$components/Notification.svelte";
+    import * as io from "$lib/modules/scheme/io";
+    import { showNotification } from "$lib/stores/notification.js";
+    
 	let { data } = $props();
-    const scheme = data.result;
+    let scheme: Scheme = $state(data.result) as Scheme;
+
+    showNotification("Scheme loaded successfully.", "success");
+
+    const runNormalisation = async (evt: MouseEvent) => {
+        evt.preventDefault();
+
+        const listScheme = io.schemeToStatementList(scheme);
+        const res = await fetch('/api/normalise', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(listScheme)
+        });
+
+        if (!res.ok) {
+            console.error("Failed to normalise:", await res.text());
+            showNotification("Scheme could not be normalised.", "error");
+            return;
+        }
+
+        const normalised = await res.json();
+        const normalisedScheme = io.statementListToScheme(normalised);
+        
+        scheme = normalisedScheme;
+     
+        showNotification("Scheme successfully normalised.", "success");
+    }
 </script>
 
-<h1 
-    class="flex justify-center mt-20 font-bold text-2xl"
+<header 
+    class="flex items-center justify-between p-6 bg-sky-100 h-30 shadow-md"
 >
-    Work in Progress...
-</h1>
+    <h3 class="font-semibold text-3xl text-sky-900">
+        Influence Lab
+    </h3>
+    <div class="flex gap-4">
+        <button 
+            onclick={runNormalisation}
+            class="bg-sky-700 hover:bg-sky-600 text-center px-6 py-2 
+                rounded-lg w-48 text-lg text-white font-semibold 
+                border border-black"
+        >
+            Normalise 
+        </button>
+    </div>
+</header>
 
-<GraphContainer scheme={scheme}/>
+<Notification />
+
+<div 
+    class="grid grid-cols-1 md:grid-cols-2 justify-center p-6 gap-6"
+>
+    {#key scheme}
+        {#each [...scheme] as [variableFrom, innerMap]}
+            {#each [...innerMap] as [variableTo, statements]}
+                <GraphContainer 
+                    {variableFrom}
+                    {variableTo}
+                    scheme={statements}
+                />
+            {/each}
+        {/each}
+    {/key} 
+</div>
 

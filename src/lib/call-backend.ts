@@ -1,8 +1,10 @@
 import { spawn } from 'child_process';
 
-export async function callHaskell(): Promise<Scheme> {  
+export type ScriptName = 'get-scheme' | 'normalise';
+
+export async function callHaskell(script: ScriptName, args?: string): Promise<StatementList> {  
     return new Promise((resolve, reject) => {
-        const process = spawn('cabal', ['exec', '--', 'get-scheme']); 
+        const process = spawn('cabal', ['exec', '--', script, ...(args ? [args] : [])]);
 
         let output: string = '';
         let error: string = '';
@@ -22,7 +24,7 @@ export async function callHaskell(): Promise<Scheme> {
             } 
             
             try {
-                const scheme: Scheme = JSON.parse(JSON.parse(output)) as Scheme;
+                const scheme: StatementList = JSON.parse(JSON.parse(output)) as StatementList;
                 resolve(scheme);
             } catch (e) {
                 reject(new Response(JSON.stringify({ error: 'Invalid JSON output' }), { status: 500 }));

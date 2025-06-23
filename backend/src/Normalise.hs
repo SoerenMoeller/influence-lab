@@ -1,19 +1,18 @@
-import Types (Behaviour(MONO, ANTI, ARB, CONST), Interval(..), Variable(..), Statement(..))
+import Types
+  ( Behaviour(ANTI, ARB, CONST, MONO)
+  , Interval(..)
+  , Statement(..)
+  , Variable(..)
+  )
+import qualified Scheme.IO as IO
+import qualified Scheme.Normalise as Normalise
 
-import Data.Aeson (decode)
-import System.Environment (getArgs)
-import qualified Data.ByteString.Lazy.Char8 as B
-
-
-{-# LANGUAGE OverloadedStrings #-}
+import qualified Data.Maybe as Maybe
+import Control.Monad (guard)
 
 main :: IO ()
-main = do 
-    args <- getArgs
-    case args of
-      [jsonStr] -> do
-          let statements = decode (B.pack jsonStr) :: Maybe [Statement]
-          case statements of
-              Just stmts -> mapM_ print stmts
-              Nothing    -> putStrLn "Failed to parse JSON into [Statement]"
-      _ -> putStrLn "Usage: GetScheme \"[JSON array of Statements]\""
+main = do
+    input <- IO.schemeFromJson
+    guard (Maybe.isJust input)
+    let scheme = Maybe.fromJust input
+    print . IO.schemeToJson . Normalise.normalise $ scheme

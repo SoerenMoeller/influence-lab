@@ -4,20 +4,22 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library common 
-    hs-source-dirs:    backend/lib
-    exposed-modules:   Types
-    build-depends:     base >=4.7 && <5, containers, aeson
+    hs-source-dirs:    backend/lib/
+    exposed-modules:   Types, Types.Statement, Types.Behaviour, Scheme.IO, 
+                       Scheme.Rules, Scheme.Points, Scheme.Normalise
+    other-modules:     Types.Base
+    build-depends:     base >=4.7 && <5, containers, aeson, partial-order, bytestring
     default-language:  Haskell2010
 
 executable get-scheme
     hs-source-dirs:    backend/src
     main-is:           Scheme.hs
-    build-depends:     base >=4.7 && <5, containers, aeson, common
+    build-depends:     base >=4.7 && <5, containers, common
     default-language:  Haskell2010
 
 executable normalise
     hs-source-dirs:    backend/src
     main-is:           Normalise.hs
-    build-depends:     base >=4.7 && <5, containers, aeson, common, bytestring
+    build-depends:     base >=4.7 && <5, containers, common 
     default-language:  Haskell2010
     

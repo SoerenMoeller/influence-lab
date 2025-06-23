@@ -11,7 +11,7 @@ declare global {
 
     type Behaviour = MONO | ANTI | CONST | ARB;
     
-    type Statement = {
+    type LongStatement = {
         variableFrom: string;
         domain:       Interval;
         behaviour:    Behaviour;
@@ -19,7 +19,15 @@ declare global {
         variableTo:   string;
     }
 
-    type Scheme = Statement[];
+    type StatementList = LongStatement[];
+
+    type Statement = {
+        domain:    Interval;
+        behaviour: Behaviour;
+        range:     Interval;
+    }
+
+    type Scheme = Map<string, Map<string, Statement[]>>;
 }
 
 export {};
