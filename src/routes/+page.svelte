@@ -57,7 +57,8 @@
 <Notification />
 
 <div 
-    class="grid grid-cols-1 md:grid-cols-2 justify-center p-6 gap-6"
+    id="scheme-container"
+    class="grid grid-cols-1 justify-center p-6 gap-6"
 >
     {#key scheme}
         {#each [...scheme] as [variableFrom, innerMap]}
@@ -72,3 +73,10 @@
     {/key} 
 </div>
 
+<style lang="postcss">
+    @media (min-width: 2000px) {
+        #scheme-container {
+            @apply grid-cols-2;
+        } 
+    }
+</style>
