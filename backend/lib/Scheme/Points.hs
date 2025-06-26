@@ -25,12 +25,13 @@ boundaries var sts = sort . nub $ bdsOuter ++ bdsInner
 
 statementInflFrom :: Variable -> Scheme -> [Statement]
 statementInflFrom v (Scheme m) =
-  concat . Map.elems $ Map.findWithDefault Map.empty v m
+    concat . Map.elems $ Map.findWithDefault Map.empty v m
 
 statementInflTo :: Variable -> Scheme -> [Statement]
 statementInflTo v (Scheme m) = concat . Maybe.mapMaybe (Map.lookup v) $ Map.elems m
 
 overlaps :: Interval -> [Statement] -> [Statement]
 overlaps (Interval x y) =
-  filter (\(Statement (Interval x' y') _ _) -> x' <= x && y' >= y)
+    filter (\(Statement (Interval x' y') _ _) -> x' <= x && y' >= y)
+
 
