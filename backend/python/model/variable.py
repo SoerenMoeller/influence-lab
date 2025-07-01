@@ -16,3 +16,10 @@ def post(variable: str, scheme: Scheme) -> set[str]:
 
 def pre(variable: str, scheme: Scheme) -> set[str]:
     return {var for var in scheme.variables if variable in post(var, scheme)}
+
+
+def is_maximal(variable: str, scheme: Scheme) -> bool:
+    for var in post(variable, scheme):
+        if post(var, scheme):
+            return False
+    return True
