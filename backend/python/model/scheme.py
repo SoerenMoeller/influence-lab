@@ -4,7 +4,7 @@ from model.statement import Statement, LongStatement
 
 class Scheme:
     def __init__(self, statements: list[LongStatement]):
-        self.statements: dict[tuple[str, str], set[Statement]] = defaultdict(lambda: set())
+        self.statements: dict[tuple[str, str], list[Statement]] = defaultdict(lambda: list())
         self.variables: set[str] = set() 
         self.order: dict[str, set[str]] = defaultdict(lambda: set())
 
@@ -12,7 +12,7 @@ class Scheme:
             self.variables.add(statement.variableFrom)
             self.variables.add(statement.variableTo)
             self.order[statement.variableFrom].add(statement.variableTo)
-            self.statements[(statement.variableFrom, statement.variableTo)].add(Statement(statement.domain, statement.behaviour, statement.range))
+            self.statements[(statement.variableFrom, statement.variableTo)].append(Statement(statement.domain, statement.behaviour, statement.range))
 
         for k in self.variables:
             for i in self.variables:
@@ -20,6 +20,12 @@ class Scheme:
                     self.order[i].update(self.order[k])
                     
     def __str__(self):
-        return str(self.statements)
+        result = ''
+        for a, b in self.statements:
+            result += f'C_{{{a}, {b}}}:\n'
+            for st in self.statements[(a, b)]:
+                result += f'    {str(st)}\n'
+                
+        return result
 
         

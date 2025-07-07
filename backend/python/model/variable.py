@@ -1,7 +1,7 @@
 from model.scheme import Scheme
 
 
-def post(variable: str, scheme: Scheme) -> set[str]:
+def post(scheme: Scheme, variable: str) -> set[str]:
     result = set()
     for target in scheme.order[variable]:
         is_transitive = False
@@ -14,12 +14,12 @@ def post(variable: str, scheme: Scheme) -> set[str]:
     return result
 
 
-def pre(variable: str, scheme: Scheme) -> set[str]:
-    return {var for var in scheme.variables if variable in post(var, scheme)}
+def pre(scheme: Scheme, variable: str) -> set[str]:
+    return {var for var in scheme.variables if variable in post(scheme, var)}
 
 
 def is_maximal(variable: str, scheme: Scheme) -> bool:
-    for var in post(variable, scheme):
-        if post(var, scheme):
+    for var in post(scheme, variable):
+        if post(scheme, var):
             return False
     return True

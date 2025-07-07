@@ -1,9 +1,10 @@
+import bisect
 from model.scheme import Scheme
 import model.variable as vbl
 
-def boundaries(scheme: Scheme, variable: str) -> set[float]:
-    statementsFrom = [st for var in vbl.post(variable, scheme) for st in scheme.statements[variable, var]]
-    statementsTo = [st for var in vbl.pre(variable, scheme) for st in scheme.statements[var, variable]]
+def boundaries(scheme: Scheme, variable: str) -> list[float]:
+    statementsFrom = [st for var in vbl.post(scheme, variable) for st in scheme.statements[variable, var]]
+    statementsTo = [st for var in vbl.pre(scheme, variable) for st in scheme.statements[var, variable]]
 
     bounds = set()
     for statement in statementsFrom:
@@ -13,17 +14,31 @@ def boundaries(scheme: Scheme, variable: str) -> set[float]:
         bounds.add(statement.range.start)
         bounds.add(statement.range.end)
         
-    return bounds
+    return sorted(bounds)
 
-def dist_tp(variable: str, x: float, y: float, scheme: Scheme) -> int:
+def dist_tp(scheme: Scheme, variable: str, x: float, y: float) -> int:
     return sum(
-        dist_tp2(variable, var2, x, y, scheme) for var2 in var.post(variable, scheme)
+        dist_tp2(scheme, variable, var2, x, y) for var2 in vbl.post(scheme, variable)
     )
 
-def dist_tp2(var1: str, var2: str, x: float, y: float, scheme: Scheme) -> int:
-    if var.is_maximal(var1, scheme):
+def dist_tp2(scheme: Scheme, var1: str, var2: str, x: float, y: float) -> int: 
+    if vbl.is_maximal(var1, scheme):
         return 0
+    
+    scheme
+    
+    print(f'x={x}, y={y}, var1={var1}, var2={var2}')
+    bounds = boundaries(scheme, var2)
+    print(f'all bounds: {bounds}')
+    left_end = bisect.bisect(bounds, x)
+    right_end = bisect.bisect(bounds, y)
+    bounds = bounds[left_end:right_end + 1]
+    print(f'bounds: {bounds}')
+    # for i, j in zip(bounds, bounds[:-1]):
+    #     bounds.bisect
 
-    result = 2
+    
+
+    return 2
     # for i in range()
     # return result
