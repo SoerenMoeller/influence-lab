@@ -1,22 +1,23 @@
 import z3
 
-from model.statement import Statement
+from model.statement import Statement, LongStatement
 from model.interval import Interval
 from model.behaviour import Behaviour 
 from model.scheme import Scheme
 import model.variable as var
+import src.points as points
 
 scheme = Scheme([
-    Statement('a', Interval(0, 1), Behaviour.ANTI, Interval(0, 2), 'b'),       
-    Statement('b', Interval(0, 1), Behaviour.MONO, Interval(0, 2), 'd'),
-    Statement('b', Interval(1, 2), Behaviour.MONO, Interval(0, 2), 'd'),
-    Statement('a', Interval(0, 1), Behaviour.CONST, Interval(0, 1), 'd'),
-    Statement('a', Interval(0, 1), Behaviour.MONO, Interval(0, 2), 'c'),
-    Statement('c', Interval(0, 2), Behaviour.MONO, Interval(0, 2), 'd')
+    LongStatement('a', Interval(0, 1), Behaviour.ANTI, Interval(0, 2), 'b'),       
+    LongStatement('b', Interval(0, 1), Behaviour.MONO, Interval(0, 2), 'd'),
+    LongStatement('b', Interval(1, 2), Behaviour.MONO, Interval(0, 2), 'd'),
+    LongStatement('a', Interval(0, 1), Behaviour.CONST, Interval(0, 1), 'd'),
+    LongStatement('a', Interval(0, 1), Behaviour.MONO, Interval(0, 2), 'c'),
+    LongStatement('c', Interval(0, 2), Behaviour.MONO, Interval(0, 2), 'd')
 ])
 print(scheme)
 
-
+print(points.boundaries(scheme, 'a'))
 
 # Create solver instance
 s = z3.Solver()

@@ -1,8 +1,19 @@
 from model.scheme import Scheme
-import model.variable as var
+import model.variable as vbl
 
 def boundaries(scheme: Scheme, variable: str) -> set[float]:
-    ...
+    statementsFrom = [st for var in vbl.post(variable, scheme) for st in scheme.statements[variable, var]]
+    statementsTo = [st for var in vbl.pre(variable, scheme) for st in scheme.statements[var, variable]]
+
+    bounds = set()
+    for statement in statementsFrom:
+        bounds.add(statement.domain.start)
+        bounds.add(statement.domain.end)
+    for statement in statementsTo:
+        bounds.add(statement.range.start)
+        bounds.add(statement.range.end)
+        
+    return bounds
 
 def dist_tp(variable: str, x: float, y: float, scheme: Scheme) -> int:
     return sum(
