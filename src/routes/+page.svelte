@@ -58,7 +58,7 @@
 
 <div 
     id="scheme-container"
-    class="grid grid-cols-1 justify-center p-6 gap-6"
+    class="grid grid-cols-1 lg:grid-cols-2 justify-center p-6 gap-6"
 >
     {#key scheme}
         {#each [...scheme] as [variableFrom, innerMap]}
