@@ -1,11 +1,11 @@
-import { callHaskell } from '$lib/call-backend';
+import { callPython } from '$lib/call-backend';
 import type { RequestHandler } from '@sveltejs/kit';
 
 export const POST: RequestHandler = async ({ request }) => {
     try {
         const inputScheme: StatementList = await request.json();
         const json = JSON.stringify(inputScheme);
-        const result = await callHaskell('normalise', json);
+        const result = await callPython('normalise', json);
 
         return new Response(JSON.stringify(result), {
             headers: { 'Content-Type': 'application/json' }
