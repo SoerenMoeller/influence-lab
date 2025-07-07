@@ -24,7 +24,7 @@ export async function callPython(script: string, args?: string): Promise<Stateme
             } 
             
             try {
-                console.log(output);
+                // console.log(output);
                 const scheme: StatementList = JSON.parse(output) as StatementList;
                 resolve(scheme);
             } catch (e) {
