@@ -28,6 +28,8 @@ declare global {
     }
 
     type Scheme = Map<string, Map<string, Statement[]>>;
+    
+    type Points = Map<string, Map<string, {x: number, y: number}[]>>
 }
 
 export {};

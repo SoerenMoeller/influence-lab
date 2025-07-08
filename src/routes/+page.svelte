@@ -6,6 +6,8 @@
     
 	let { data } = $props();
     let scheme: Scheme = $state(data.result) as Scheme;
+    let points: Points = $state(new Map);
+
 
     showNotification("Scheme loaded successfully.", "success");
 
@@ -34,6 +36,29 @@
      
         showNotification("Scheme successfully normalised.", "success");
     }
+    
+    const runSolver = async (evt: MouseEvent) => {
+        evt.preventDefault();
+
+        const listScheme = io.schemeToStatementList(scheme);
+        const res = await fetch('/api/solver', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(listScheme)
+        });
+
+        if (!res.ok) {
+            console.error("Failed to solve:", await res.text());
+            showNotification("Scheme could not be solved.", "error");
+            return;
+        }
+
+        points = await res.json() as Points;
+     
+        showNotification("Scheme successfully solved.", "success");
+    }
 </script>
 
 <header 
@@ -51,6 +76,14 @@
         >
             Normalise 
         </button>
+        <button 
+            onclick={runSolver}
+            class="bg-sky-700 hover:bg-sky-600 text-center px-6 py-2 
+                rounded-lg w-48 text-lg text-white font-semibold 
+                border border-black"
+        >
+            Solve 
+        </button>
     </div>
 </header>
 
@@ -67,6 +100,7 @@
                     {variableFrom}
                     {variableTo}
                     scheme={statements}
+                    points={}
                 />
             {/each}
         {/each}

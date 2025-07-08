@@ -13,6 +13,7 @@ def main() -> int:
     result = io.statement_list_to_json(
         io.scheme_to_statement_list(scheme)
     )
+    print('<<<RESULT>>>')
     print(result)
 
     return 0

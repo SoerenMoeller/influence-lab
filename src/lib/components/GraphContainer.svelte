@@ -8,6 +8,11 @@
     const scheme: Statement[]  = props.scheme as Statement[];
     const variableFrom: string = props.variableFrom as string;
     const variableTo: string   = props.variableTo as string;
+    const points: {x: number, y: number}[] | undefined = $derived(props.points);
+    
+    $effect(() => {
+        console.log(points);
+    })
 
     let isHovered: boolean = $state(false);
 

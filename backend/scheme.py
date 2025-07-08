@@ -30,8 +30,9 @@ schemes = [
 
 
 def main() -> int:
-    statements = io.scheme_to_statement_list(schemes[1])
+    statements = io.scheme_to_statement_list(schemes[0])
     json = io.statement_list_to_json(statements)
+    print('<<<RESULT>>>')
     print(json)
    
     return 0

@@ -67,7 +67,7 @@ def dist(scheme: Scheme, var: str, x: float, y: float) -> int:
     return dist_tp(scheme, var, x, y) + dist_poi(scheme, var, x, y)
 
 
-def get_original_point(scheme: Scheme, var: str, x: float) -> int:
+def original_point(scheme: Scheme, var: str, x: float) -> int:
     bounds = boundaries(scheme, var)
     result = 0
     
@@ -78,3 +78,13 @@ def get_original_point(scheme: Scheme, var: str, x: float) -> int:
         result += 1 + dist(scheme, var, bounds[i], bounds[i + 1])
         
     return result    
+
+
+def size(scheme: Scheme, var: str) -> int:
+    bounds = boundaries(scheme, var)
+    
+    result = 1
+    for i in range(len(bounds) - 1):
+        result += 1 + dist(scheme, var, bounds[i], bounds[i + 1])
+        
+    return result

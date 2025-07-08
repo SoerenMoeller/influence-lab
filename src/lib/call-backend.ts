@@ -1,8 +1,8 @@
 import { spawn } from 'child_process';
 
-export type ScriptName = 'scheme' | 'normalise';
+export type ScriptName = 'scheme' | 'normalise' | 'solver';
 
-export async function callPython(script: string, args?: string): Promise<StatementList> {  
+export async function callPython(script: string, args?: string): Promise<any> {  
     return new Promise((resolve, reject) => {
         const process = spawn('backend/.venv/bin/python', ["backend/" + script + ".py", ...(args ? [args] : [])]);
 
@@ -24,9 +24,19 @@ export async function callPython(script: string, args?: string): Promise<Stateme
             } 
             
             try {
-                // console.log(output);
-                const scheme: StatementList = JSON.parse(output) as StatementList;
-                resolve(scheme);
+                const marker = '<<<RESULT>>>';
+                const markerIndex = output.indexOf(marker);
+
+                if (markerIndex === -1) {
+                    throw new Error('Marker string not found in output');
+                }
+
+                // Extract everything after the marker line, including possible newline(s)
+                const jsonStartIndex = markerIndex + marker.length;
+                const jsonString = output.slice(jsonStartIndex).trim();
+
+                // console.log(jsonString)
+                resolve(JSON.parse(jsonString));
             } catch (e) {
                 reject(new Response(JSON.stringify({ error: 'Invalid JSON output' }), { status: 500 }));
             }
