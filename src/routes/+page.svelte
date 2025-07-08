@@ -73,10 +73,5 @@
     {/key} 
 </div>
 
-<style lang="postcss">
-    @media (min-width: 2000px) {
-        #scheme-container {
-            @apply grid-cols-2;
-        } 
-    }
+<style>
 </style>

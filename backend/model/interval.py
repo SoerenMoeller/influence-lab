@@ -14,3 +14,7 @@ class Interval:
         
     def __str__(self):
         return f'[{self.start}, {self.end}]'
+    
+
+def subinterval(iv1: Interval, iv2: Interval) -> bool:
+    return iv1.start >= iv2.start and iv1.end <= iv2.end
