@@ -33,7 +33,7 @@ def main() -> int:
     statements = io.scheme_to_statement_list(schemes[1])
     json = io.statement_list_to_json(statements)
     print(json)
-    
+   
     return 0
     
     
