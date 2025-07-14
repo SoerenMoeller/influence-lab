@@ -9,13 +9,13 @@
     let statementElement: SVGGElement;
     let isHovered: boolean = $state(false);
     let isClicked: boolean = $state(false);
-    const x = props.x as d3.ScaleLinear<number, number>; 
-    const y = props.y as d3.ScaleLinear<number, number>;
+    const xMapping = props.xMapping as d3.ScaleLinear<number, number>; 
+    const yMapping = props.yMapping as d3.ScaleLinear<number, number>;
 
     function calcBehaviourSize(st: Statement): number {
         return Math.min(
-            x(st.domain.end) - x(st.domain.start),
-            y(st.range.start) - y(st.range.end), 
+            xMapping(st.domain.end) - xMapping(st.domain.start),
+            yMapping(st.range.start) - yMapping(st.range.end), 
             50
         ) * 0.8; 
     }
@@ -32,10 +32,10 @@
 >
     <rect
         bind:this={statementElement} 
-        width={x(statement.domain.end) - x(statement.domain.start)}
-        height={y(statement.range.start) - y(statement.range.end)}
-        x={x(statement.domain.start)}
-        y={y(statement.range.end)}
+        width={xMapping(statement.domain.end) - xMapping(statement.domain.start)}
+        height={yMapping(statement.range.start) - yMapping(statement.range.end)}
+        x={xMapping(statement.domain.start)}
+        y={yMapping(statement.range.end)}
         fill-opacity="0"
         class="stroke-black"
         class:stroke-red-700={highlighted}
@@ -47,7 +47,7 @@
         behaviour={statement.behaviour.toLowerCase()}
         {highlighted}
         size={calcBehaviourSize(statement)}
-        x={x(statement.domain.start) + (x(statement.domain.end) - x(statement.domain.start)) / 2}
-        y={y(statement.range.end) + (y(statement.range.start) - y(statement.range.end)) / 2}
+        x={xMapping(statement.domain.start) + (xMapping(statement.domain.end) - xMapping(statement.domain.start)) / 2}
+        y={yMapping(statement.range.end) + (yMapping(statement.range.start) - yMapping(statement.range.end)) / 2}
     />
 </g>

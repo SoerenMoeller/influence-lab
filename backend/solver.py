@@ -3,7 +3,7 @@ from z3 import *
 
 
 from model.behaviour import Behaviour
-import src.io as io
+import transform as transform
 import src.points as points
 import model.variable as vbl
 import src.solver.sat as solver

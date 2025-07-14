@@ -72,7 +72,6 @@ export function serialisePoints(points: Points): PointsSerialized {
 }
 
 export function deserializePoints(data: PointsSerialized): Points {
-    debugger;
     const result: Points = new Map();
 
     for (const entry of data) {

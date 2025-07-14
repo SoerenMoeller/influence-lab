@@ -92,15 +92,14 @@ def deserialise_long_statement(data: dict) -> LongStatement:
     ) 
     
 
-def serialise_problem_data(problemData: ProblemData) -> str:
-    return json.dumps({
+def serialise_problem_data(problemData: ProblemData) -> dict:
+    return {
         'scheme': serialize_scheme(problemData.scheme),
         'hypothesis': serialise_long_statement(problemData.hypothesis) 
-    })
+    }
 
 
-def deserialise_problem_data(data_str: str) -> ProblemData:
-    data = json.loads(data_str)
+def deserialise_problem_data(data: dict) -> ProblemData:
     scheme = deserialize_scheme(data['scheme'])
     hypothesis = deserialise_long_statement(data['hypothesis'])
     

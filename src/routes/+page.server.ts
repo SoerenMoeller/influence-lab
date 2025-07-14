@@ -1,15 +1,26 @@
-import { callPython } from "$lib/call-backend"; 
 import * as transform from "$lib/modules/transform";
+import { PUBLIC_API_URL } from '$env/static/public';
 
 type LoadResult = {
-    result: ProblemData;
+    result: ProblemData[];
 };
 
 export const load = async (args): Promise<LoadResult> => {
-    const result: ProblemDataSerialized = await callPython('scheme'); 
-    const problemData: ProblemData = transform.deserialiseProblemData(result);
-    return {
-        result: problemData
-    };
+        const res = await fetch(`${PUBLIC_API_URL}/api/schemes`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+        });
+
+        if (!res.ok) {
+            console.error("Failed to load:", await res.text());
+        }
+
+        const data = await res.json();
+        const problems = data.map((d: any) => transform.deserialiseProblemData(d));
+        return {
+            result: problems 
+        } 
 };
 

@@ -48,7 +48,8 @@
     viewBox={settings[behaviour].viewBox} 
     xmlns:xlink="http://www.w3.org/1999/xlink"
     aria-hidden="true" 
-    transform={`translate(${x}, ${y})`}
+    {x}
+    {y}
 >
     <defs>
         <path 
