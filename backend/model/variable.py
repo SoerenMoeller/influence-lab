@@ -23,3 +23,7 @@ def is_maximal(variable: str, scheme: Scheme) -> bool:
         if post(scheme, var):
             return False
     return True
+
+
+def is_minimal(scheme: Scheme, variable: str) -> bool:
+    return not pre(scheme, variable)

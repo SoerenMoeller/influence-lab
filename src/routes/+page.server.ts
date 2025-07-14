@@ -1,15 +1,15 @@
-import { callHaskell, callPython } from "$lib/call-backend"; 
-import * as io from "$lib/modules/scheme/io";
+import { callPython } from "$lib/call-backend"; 
+import * as transform from "$lib/modules/transform";
 
 type LoadResult = {
-    result: Scheme;
+    result: ProblemData;
 };
 
 export const load = async (args): Promise<LoadResult> => {
-    const result: StatementList = await callPython('scheme'); 
-    const scheme: Scheme = io.statementListToScheme(result); 
+    const result: ProblemDataSerialized = await callPython('scheme'); 
+    const problemData: ProblemData = transform.deserialiseProblemData(result);
     return {
-        result: scheme
+        result: problemData
     };
 };
 

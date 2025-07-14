@@ -5,14 +5,43 @@
 
     let container: HTMLDivElement;
     const props = $props();
-    const scheme: Statement[]  = props.scheme as Statement[];
-    const variableFrom: string = props.variableFrom as string;
-    const variableTo: string   = props.variableTo as string;
-    const points: {x: number, y: number}[] | undefined = $derived(props.points);
+    const scheme: Scheme         = props.scheme as Scheme;
+    const variableFrom: string   = props.variableFrom as string;
+    const variableTo: string     = props.variableTo as string;
+    const hypothesis: Hypothesis = props.hypothesis;
+    const points: Point[]        = $derived.by(() => {
+        const points = props.points;
+        console.log(points.length);
+        if (points.length > 0) {
+            if (points[0].x != minValueDomain) {
+                points.unshift({
+                    x: minValueDomain,
+                    y: points[0].y
+                })
+            }
+            if (points[points.length - 1].x != maxValueDomain) {
+                points.push({
+                    x: maxValueDomain,
+                    y: points[points.length - 1].y
+                })
+            }
+        }
+        
+        return points;
+    });
+    const statements             = $derived(scheme.statements.get(variableFrom)?.get(variableTo))
+    
+    let elementary = $state(true);
+    for (const intermediate of scheme.order.get(variableFrom)) {
+        for (const reachable of scheme.order.get(intermediate)) {
+            if (reachable == variableTo) {
+                elementary = false;
+            }
+        }
+    }
     
     $effect(() => {
-        console.log(points);
-    })
+    });
 
     let isHovered: boolean = $state(false);
 
@@ -23,10 +52,10 @@
     const marginBottom = 80;
     const marginLeft   = 80;
 
-    const minValueDomain = Math.min(...scheme.map((st: Statement) => st.domain.start));
-    const maxValueDomain = Math.max(...scheme.map((st: Statement) => st.domain.end));
-    const minValueRange  = Math.min(...scheme.map((st: Statement) => st.range.start));
-    const maxValueRange  = Math.max(...scheme.map((st: Statement) => st.range.end));
+    const minValueDomain = Math.min(...statements.map((st: Statement) => st.domain.start));
+    const maxValueDomain = Math.max(...statements.map((st: Statement) => st.domain.end));
+    const minValueRange  = Math.min(...statements.map((st: Statement) => st.range.start));
+    const maxValueRange  = Math.max(...statements.map((st: Statement) => st.range.end));
 
     const x = d3.scaleLinear()
         .domain([minValueDomain - 1, maxValueDomain + 1])
@@ -110,11 +139,36 @@
             {variableFrom}
         </text>
 
-        {#each scheme as st}
-            <StatementComponent statement={st} {x} {y} />        
+        {#each statements as st}
+            <StatementComponent statement={st} {x} {y} highlighted={false} />        
         {/each}
+        
+        {#if variableFrom == hypothesis.variableFrom && variableTo == hypothesis.variableTo}
+            <StatementComponent 
+                statement={
+                    {domain: hypothesis.domain, behaviour: hypothesis.behaviour, range: hypothesis.range}
+                } 
+                highlighted={true}
+                {x} {y} 
+            />
+        {/if}
+        
+        {#each points as point}
+            <circle r="5" cx={x(point.x)} cy={y(point.y)} fill="red" />                         
+        {/each}
+        
+        {#if points.length > 1 && elementary} 
+            {#each Array(points.length - 1) as _, idx}
+                <line
+                    x1={x(points[idx].x)}
+                    y1={y(points[idx].y)}
+                    x2={x(points[idx + 1].x)}
+                    y2={y(points[idx + 1].y)}
+                    style="stroke:red;stroke-width:2"
+                />
+            {/each}
+        {/if}
     </svg>
-
     
     {#if isHovered}
         <div 

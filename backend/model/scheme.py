@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import Optional
 from model.statement import Statement, LongStatement
 
 

@@ -3,7 +3,7 @@ import type { RequestHandler } from '@sveltejs/kit';
 
 export const POST: RequestHandler = async ({ request }) => {
     try {
-        const inputScheme: StatementList = await request.json();
+        const inputScheme: ProblemDataSerialized = await request.json();
         const json = JSON.stringify(inputScheme);
         const result = await callPython('normalise', json);
 

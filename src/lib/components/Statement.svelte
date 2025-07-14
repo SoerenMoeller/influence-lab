@@ -4,6 +4,7 @@
 
     const props = $props();
     const statement: Statement = props.statement as Statement;
+    const highlighted: boolean  = props.highlighted as boolean;
     
     let statementElement: SVGGElement;
     let isHovered: boolean = $state(false);
@@ -37,12 +38,14 @@
         y={y(statement.range.end)}
         fill-opacity="0"
         class="stroke-black"
+        class:stroke-red-700={highlighted}
         class:stroke-sky-600={isHovered || isClicked}
     />
 
     <BehaviourComponent
         isHovered={isHovered || isClicked}
         behaviour={statement.behaviour.toLowerCase()}
+        {highlighted}
         size={calcBehaviourSize(statement)}
         x={x(statement.domain.start) + (x(statement.domain.end) - x(statement.domain.start)) / 2}
         y={y(statement.range.end) + (y(statement.range.start) - y(statement.range.end)) / 2}

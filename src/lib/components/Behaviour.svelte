@@ -1,6 +1,7 @@
 <script lang="ts">
     const props = $props();
     const behaviour = props.behaviour as 'mono' | 'anti' | 'const' | 'arb';
+    const highlighted: boolean = props.highlighted;
     const size = props.size as number; 
     let x = $state(props.x) as number;
     let y = $state(props.y) as number;
@@ -47,8 +48,6 @@
     viewBox={settings[behaviour].viewBox} 
     xmlns:xlink="http://www.w3.org/1999/xlink"
     aria-hidden="true" 
-    x={x}
-    y={y}
     transform={`translate(${x}, ${y})`}
 >
     <defs>
@@ -61,6 +60,8 @@
         class="fill-black stroke-black"
         class:fill-sky-600={isHovered}
         class:stroke-sky-600={isHovered}
+        class:fill-red-700={highlighted}
+        class:stroke-red-700={highlighted}
         stroke-width="0" 
         transform="scale(1,-1)"
     >

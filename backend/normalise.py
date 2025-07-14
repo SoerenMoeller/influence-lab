@@ -7,12 +7,9 @@ import src.normalise as normalise
 
 def main() -> int:
     args = sys.argv[1]
-    statements = io.json_to_statement_list(args)
-    scheme = Scheme(statements)
-    scheme = normalise.normalise(scheme)
-    result = io.statement_list_to_json(
-        io.scheme_to_statement_list(scheme)
-    )
+    problem_data = io.deserialise_problem_data(args)
+    problem_data = normalise.normalise(problem_data)
+    result = io.serialise_problem_data(problem_data)
     print('<<<RESULT>>>')
     print(result)
 

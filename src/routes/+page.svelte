@@ -1,26 +1,39 @@
 <script lang="ts">
     import GraphContainer from "$components/GraphContainer.svelte";
     import Notification from "$components/Notification.svelte";
-    import * as io from "$lib/modules/scheme/io";
+    import * as transform from "$lib/modules/transform";
     import { showNotification } from "$lib/stores/notification.js";
     
 	let { data } = $props();
-    let scheme: Scheme = $state(data.result) as Scheme;
-    let points: Points = $state(new Map);
+    let problemData: ProblemData = $state(data.result) as ProblemData;
+    let scheme: Scheme = $derived(problemData.scheme);
+    let hypothesis: Hypothesis = $derived(problemData.hypothesis);
 
+    const initialPoints: Points = new Map();
+    for (const [from, toSet] of data.result.scheme.order) {
+        if (!initialPoints.has(from)) {
+            initialPoints.set(from, new Map());
+        }
 
+        const innerMap = initialPoints.get(from)!;
+        for (const to of toSet) {
+            innerMap.set(to, []);  // Initialize with empty list
+        }
+    }
+    let points: Points = $state(initialPoints);
+    
     showNotification("Scheme loaded successfully.", "success");
 
     const runNormalisation = async (evt: MouseEvent) => {
         evt.preventDefault();
 
-        const listScheme = io.schemeToStatementList(scheme);
+        const problemDataSer = transform.serialiseProblemData(problemData);
         const res = await fetch('/api/normalise', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(listScheme)
+            body: JSON.stringify(problemDataSer)
         });
 
         if (!res.ok) {
@@ -29,10 +42,8 @@
             return;
         }
 
-        const normalised = await res.json();
-        const normalisedScheme = io.statementListToScheme(normalised);
-        
-        scheme = normalisedScheme;
+        const normalisedProblem = await res.json();
+        problemData = transform.deserialiseProblemData(normalisedProblem);
      
         showNotification("Scheme successfully normalised.", "success");
     }
@@ -40,7 +51,7 @@
     const runSolver = async (evt: MouseEvent) => {
         evt.preventDefault();
 
-        const listScheme = io.schemeToStatementList(scheme);
+        const listScheme = transform.serialiseScheme(scheme);
         const res = await fetch('/api/solver', {
             method: 'POST',
             headers: {
@@ -55,7 +66,8 @@
             return;
         }
 
-        points = await res.json() as Points;
+        const result = await res.json();
+        points = transform.deserializePoints(result);
      
         showNotification("Scheme successfully solved.", "success");
     }
@@ -93,14 +105,15 @@
     id="scheme-container"
     class="grid grid-cols-1 lg:grid-cols-2 justify-center p-6 gap-6"
 >
-    {#key scheme}
-        {#each [...scheme] as [variableFrom, innerMap]}
+    {#key problemData}
+        {#each [...scheme.statements] as [variableFrom, innerMap]}
             {#each [...innerMap] as [variableTo, statements]}
                 <GraphContainer 
                     {variableFrom}
                     {variableTo}
-                    scheme={statements}
-                    points={}
+                    {hypothesis}
+                    {scheme}
+                    points={points.get(variableFrom)?.get(variableTo)}
                 />
             {/each}
         {/each}
