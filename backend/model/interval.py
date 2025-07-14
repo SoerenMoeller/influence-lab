@@ -18,3 +18,11 @@ class Interval:
 
 def subinterval(iv1: Interval, iv2: Interval) -> bool:
     return iv1.start >= iv2.start and iv1.end <= iv2.end
+
+
+def serialize_interval(iv: Interval) -> dict:
+    return {"start": iv.start, "end": iv.end}
+
+
+def deserialize_interval(data: dict) -> Interval:
+    return Interval(data["start"], data["end"])

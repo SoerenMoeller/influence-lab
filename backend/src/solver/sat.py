@@ -3,13 +3,13 @@ from typing import Optional
 from z3 import *
 import time
 import os
-import json
 import re
 
 
 from model.problem_data import ProblemData
 from model.statement import Statement
 from model.scheme import Scheme
+from model.points import Point, Points
 from model.behaviour import Behaviour
 import src.points as points
 
@@ -19,7 +19,7 @@ VarDict = dict[VarKey, BoolRef]
 
 
 def build_formula(problem_data: ProblemData, name: str) -> None:
-    if os.path.isfile(f'backend/formulas/{name}.smt2'):
+    if os.path.isfile(f'formulas/{name}.smt2'):
         print(f'Formula "{name}" is already built, skipping building it again..')
         return
     
@@ -42,12 +42,12 @@ def build_formula(problem_data: ProblemData, name: str) -> None:
     
     s = Solver()
     s.add(formula)
-    with open(f'backend/formulas/{name}.smt2', 'w') as f:
+    with open(f'formulas/{name}.smt2', 'w') as f:
         f.write(s.to_smt2())  
 
 
 def solve(name: str = 'formula') -> Optional[ModelRef]:
-    with open(f'backend/formulas/{name}.smt2', 'r') as f:
+    with open(f'formulas/{name}.smt2', 'r') as f:
         smt2 = f.read() 
     
     s = Solver()
@@ -76,7 +76,6 @@ def build_discrete_to_real(problem_data: ProblemData) -> dict[str, dict[int, flo
         old_bound = bounds[0]
         for bound in bounds[1:]:
             distance = points.dist(problem_data, a, old_bound, bound)
-            print(f'dist({a}, [{old_bound}, {bound}]) = {distance}')
             new_point = old_point + distance + 1
 
             mapping[new_point] = bound
@@ -91,31 +90,17 @@ def build_discrete_to_real(problem_data: ProblemData) -> dict[str, dict[int, flo
     return discrete_to_val
 
 
-def extract_model(problem_data: ProblemData, model: ModelRef) -> list:
+def extract_model(problem_data: ProblemData, model: ModelRef) -> Points:
     discrete_to_val: dict[str, dict[int, float]] = build_discrete_to_real(problem_data)
     
     positive_vars = extract_positive_vars(model)
     tuples = model_to_points(positive_vars)
     
-    result = defaultdict(lambda: defaultdict(list))
+    result: dict[str, dict[str, list[Point]]] = defaultdict(lambda: defaultdict(list))
     for a, b, x, y in tuples:
-        result[a][b].append(
-            {
-                'x': discrete_to_val[a][x],
-                'y': discrete_to_val[b][y]
-            }
-        )
+        result[a][b].append(Point(discrete_to_val[a][x], discrete_to_val[b][y]))
         
-    final = []
-    for a in problem_data.scheme.variables:
-        for b in problem_data.scheme.order[a]:
-            final.append({
-                'variableFrom': a,
-                'variableTo': b,
-                'points': result[a][b]
-            })
-        
-    return final
+    return Points(result)
 
     
 def extract_positive_vars(model) -> list[str]:

@@ -1,6 +1,6 @@
 from collections import defaultdict
 from typing import Optional
-from model.statement import Statement, LongStatement
+from model.statement import Statement, LongStatement, deserialise_statement, serialise_statement
 
 
 class Scheme:
@@ -30,3 +30,39 @@ class Scheme:
         return result
 
         
+def serialise_scheme(scheme: Scheme) -> dict:
+    return {
+        "variables": sorted(scheme.variables),
+        "order": [
+            {
+                "variableFrom": var_from,
+                "variableTos": sorted(list(var_tos))
+            }
+            for var_from, var_tos in scheme.order.items()
+        ],
+        "statements": [
+            {
+                "variableFrom": var_from,
+                "variableTo": var_to,
+                "statements": [serialise_statement(st) for st in scheme.statements[(var_from, var_to)]]
+            }
+            for var_from, var_to in scheme.statements
+        ]
+    }
+    
+def deserialise_scheme(data: dict) -> Scheme:
+    scheme = Scheme([])
+    scheme.variables = set(data['variables'])
+
+    for entry in data['order']:
+        var_from = entry['variableFrom']
+
+        for var_to in entry['variableTos']:
+            scheme.order[var_from].add(var_to)
+            
+    scheme.statements 
+    for entry in data['statements']:
+        scheme.statements[(entry['variableFrom'], entry['variableTo'])] = \
+            [deserialise_statement(e) for e in entry['statements']]
+
+    return scheme

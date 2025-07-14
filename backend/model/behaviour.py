@@ -9,6 +9,14 @@ class Behaviour(Enum):
     CONST = "const"
     ARB   = "arb"
     
+    
+def serialize_behaviour(beh: Behaviour) -> str:
+    return beh.value
+
+
+def deserialize_behaviour(val: str) -> Behaviour:
+    return Behaviour(val)
+
 
 def less_equal(beh1: Behaviour, beh2: Behaviour) -> bool:
     if beh1 == Behaviour.CONST or beh2 == Behaviour.ARB:
