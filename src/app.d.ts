@@ -3,6 +3,8 @@
 declare global {
 	namespace App {
 	}
+    
+    type Solver = 'sat' | 'uninterpreted'
 
     type Interval = {
         start: Double;

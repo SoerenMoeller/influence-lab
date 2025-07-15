@@ -1,11 +1,9 @@
 <script lang="ts">
     import "../app.css";
-    import { normaliseButtonAction, solveButtonAction } from '$lib/stores/headerActions.svelte';
+    import { headerData } from '$lib/stores/headerData.svelte';
     import Notification from "$components/Notification.svelte";
     
     let { children } = $props();
-    const normalise = $derived(normaliseButtonAction.action);
-    const solver = $derived(solveButtonAction.action);
 </script>
 
 {#snippet button(callback: (evt: MouseEvent) => void, name: string)}
@@ -27,8 +25,32 @@
             Influence Lab
         </h3>
         <div class="flex gap-4">
-            {@render button(normalise, 'Normalise')}
-            {@render button(solver, 'Solve')}
+            <select 
+                name="problem" 
+                id="problem"
+                class="w-48 text-center border border-black rounded-lg bg-white"
+                bind:value={headerData.currentProblem}
+            >
+                {#each headerData.problems as problem, index}
+                    <option value={problem}>
+                        {`Problem ${index + 1}`}
+                    </option>
+                {/each}
+            </select>
+            {@render button(headerData.normalise, 'Normalise')}
+            {@render button(headerData.solve, 'Solve')}
+            <select 
+                name="solver" 
+                id="solver"
+                class="w-48 text-center border border-black rounded-lg bg-white"
+                bind:value={headerData.solverType}
+            >
+                {#each ['sat', 'uninterpreted'] as solverType}
+                    <option value={solverType}>
+                        {solverType}
+                    </option>
+                {/each}
+            </select>
         </div>
     </header>
 

@@ -2,29 +2,27 @@
     import GraphContainer from "$components/GraphContainer.svelte";
     import * as pts from "$lib/modules/points"
     import * as api from "$lib/modules/api";
-    import * as headerActions from "$lib/stores/headerActions.svelte";
+    import { headerData } from "$lib/stores/headerData.svelte";
 
 	let { data } = $props();
     const problems: ProblemData[] = $state(data.result);
-    let problemIndex = 1; 
-
-    let problemData = $state(problems[problemIndex]);
-    let scheme: Scheme = $derived(problemData.scheme);
-    let hypothesis: Hypothesis = $derived(problemData.hypothesis);
-    let points: Points = $state(pts.initialiseDefaultPoints(data.result[problemIndex]));
-
+    
+    headerData.currentProblem = problems[0];
+    headerData.normalise = async () => {problemData = await api.normalise(problemData)};
+    headerData.solve = async () => {points = await api.solve(problemData, headerData.solverType)};
+    headerData.problems = problems;
+    
+    let points: Points = $state(pts.initialiseDefaultPoints(headerData.currentProblem));
     $effect(() => {
-        points = pts.initialiseDefaultPoints(data.result[problemIndex]);
+        if (headerData.currentProblem != null) {
+            points = pts.initialiseDefaultPoints(headerData.currentProblem);
+        }
     });
     
-    headerActions.setNormaliseAction(async () => {
-        problemData = await api.normalise(problemData)
-    })
-    
-    headerActions.setSolveAction(async () => {
-        points = await api.solve(problemData)
-    })
-    
+    let problemData = $derived(headerData.currentProblem);
+    let scheme: Scheme = $derived(problemData.scheme);
+    let hypothesis: Hypothesis = $derived(problemData.hypothesis);
+
 </script>
 
 <div 

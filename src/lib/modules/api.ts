@@ -1,11 +1,12 @@
 import { PUBLIC_API_URL } from '$env/static/public';
 import * as transform from "$lib/modules/transform";
 import * as pts from "$lib/modules/points";
-import { showNotification } from '$lib/stores/notification';
+import { removeNotification, showNotification } from '$lib/stores/notification.svelte';
 
 
 export async function normalise(problemData: ProblemData): Promise<ProblemData> {
     const serialised = transform.serialiseProblemData(problemData);
+    const notification = showNotification('Normalising Scheme...', 'delay')
     const res = await fetch(`${PUBLIC_API_URL}/api/normalise`, {
         method: 'POST',
         headers: {
@@ -13,6 +14,7 @@ export async function normalise(problemData: ProblemData): Promise<ProblemData> 
         },
         body: JSON.stringify(serialised)
     });
+    removeNotification(notification);
 
     if (!res.ok) {
         console.error("Failed to normalise:", await res.text());
@@ -28,27 +30,38 @@ export async function normalise(problemData: ProblemData): Promise<ProblemData> 
 }
 
 
-export async function solve(problemData: ProblemData): Promise<Points> {
+export async function solve(problemData: ProblemData, solverType: Solver): Promise<Points> {
     const serialised = transform.serialiseProblemData(problemData);
+    const data = {
+        problem: serialised,
+        solver: solverType
+    }
+
+    const notification = showNotification('Solving Scheme using "' + solverType + '" stategy', 'delay')
     const res = await fetch(`${PUBLIC_API_URL}/api/solve`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(serialised)
+        body: JSON.stringify(data)
     });
+    removeNotification(notification);
 
     if (!res.ok) {
-        console.error("Failed to normalise:", await res.text());
-        showNotification("Scheme could not be normalised.", "error");
+        console.error("Failed to solve:", await res.text());
+        showNotification("Scheme could not be solved.", "error");
         return pts.initialiseDefaultPoints(problemData);
     }
 
-    const pointsSerialised = await res.json();
-    const points = transform.deserializePoints(pointsSerialised);
- 
-    showNotification("Scheme successfully solved.", "success");
-    return points;
+    const result = await res.json();
+    if (result.result) {
+        const points = transform.deserializePoints(result.points);
+        showNotification("Scheme successfully solved.", "success");
+        return points;
+    }
+    
+    showNotification("Scheme is unsolvable.", "error");
+    return pts.initialiseDefaultPoints(problemData);
 }
 
     

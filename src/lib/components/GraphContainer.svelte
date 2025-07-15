@@ -57,7 +57,7 @@
         <circle r="5" cx={xMapping(point.x)} cy={yMapping(point.y)} fill="red" />                         
     {/each}
     
-    {#if points.length > 1} 
+    {#if points && points.length > 1} 
         {#each Array(points.length - 1) as _, idx}
             <line
                 x1={xMapping(points[idx].x)}
