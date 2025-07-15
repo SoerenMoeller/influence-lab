@@ -42,7 +42,7 @@ declare global {
 
     type Points = VariableMap<Point[]>;
     
-    type SchemeSerialized = {
+    type SchemeSerialised = {
         variables: string[];
         order: {
             variableFrom: string;
@@ -55,7 +55,7 @@ declare global {
         }[];
     };
     
-    type PointsSerialized = {
+    type PointsSerialised = {
         variableFrom: string;
         variableTo:   string;
         points:       Point[];
@@ -66,8 +66,8 @@ declare global {
         hypothesis: Hypothesis;
     }
     
-    type ProblemDataSerialized = {
-        scheme: SchemeSerialized;
+    type ProblemDataSerialsed = {
+        scheme: SchemeSerialised;
         hypothesis: Hypothesis;
     }
 }

@@ -2,7 +2,7 @@ from model.interval import Interval
 from model.scheme import Scheme
 from model.statement import Statement
 from model.problem_data import ProblemData
-import src.points as points
+import src.poi as poi
 import src.rules as rules
 
 
@@ -25,7 +25,7 @@ def normalise_subscheme(problem_data: ProblemData, var_from: str, var_to: str) -
 
 
 def overlap_free(problem_data: ProblemData, var_from: str, statements: list[Statement]) -> list[Statement]:
-    bounds = points.boundaries(problem_data, var_from)
+    bounds = poi.boundaries(problem_data, var_from)
     
     result = []
     for i in range(len(bounds) - 1):

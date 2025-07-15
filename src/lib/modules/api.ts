@@ -55,7 +55,8 @@ export async function solve(problemData: ProblemData, solverType: Solver): Promi
 
     const result = await res.json();
     if (result.result) {
-        const points = transform.deserializePoints(result.points);
+        const points = transform.deserialisePoints(result.points);
+        console.log(points);
         showNotification("Scheme successfully solved.", "success");
         return points;
     }

@@ -1,4 +1,4 @@
-export function serialiseProblemData(problemData: ProblemData): ProblemDataSerialized {
+export function serialiseProblemData(problemData: ProblemData): ProblemDataSerialsed {
     return {
         scheme: serialiseScheme(problemData.scheme),
         hypothesis: problemData.hypothesis
@@ -6,15 +6,15 @@ export function serialiseProblemData(problemData: ProblemData): ProblemDataSeria
 }
 
 
-export function deserialiseProblemData(data: ProblemDataSerialized): ProblemData {
+export function deserialiseProblemData(data: ProblemDataSerialsed): ProblemData {
     return {
-        scheme: deserializeScheme(data.scheme),
+        scheme: deserialiseScheme(data.scheme),
         hypothesis: data.hypothesis
     }
 }
 
 
-export function serialiseScheme(scheme: Scheme): SchemeSerialized {
+export function serialiseScheme(scheme: Scheme): SchemeSerialised {
     const variables = Array.from(scheme.variables);
     const order = Array.from(scheme.order.entries()).map(([variableFrom, variableTos]) => ({
         variableFrom,
@@ -36,7 +36,8 @@ export function serialiseScheme(scheme: Scheme): SchemeSerialized {
     };
 }
 
-export function deserializeScheme(data: SchemeSerialized): Scheme {
+
+export function deserialiseScheme(data: SchemeSerialised): Scheme {
     const variables = new Set(data.variables);
     const order = new Map(data.order.map(({ variableFrom, variableTos }) => [variableFrom, new Set(variableTos)]));
     const statements = new Map<string, Map<string, Statement[]>>();
@@ -55,8 +56,8 @@ export function deserializeScheme(data: SchemeSerialized): Scheme {
     };
 }
 
-export function serialisePoints(points: Points): PointsSerialized {
-    const serialized: PointsSerialized = [];
+export function serialisePoints(points: Points): PointsSerialised {
+    const serialized: PointsSerialised = [];
 
     for (const [variableFrom, variableToPoints] of points.entries()) {
         for (const [variableTo, pointArray] of variableToPoints.entries()) {
@@ -71,7 +72,7 @@ export function serialisePoints(points: Points): PointsSerialized {
     return serialized;    
 }
 
-export function deserializePoints(data: PointsSerialized): Points {
+export function deserialisePoints(data: PointsSerialised): Points {
     const result: Points = new Map();
 
     for (const entry of data) {
