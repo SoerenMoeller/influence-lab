@@ -23,8 +23,6 @@ def solve(problem_data: ProblemData) -> Optional[Points]:
     key = hypothesis.variableFrom, hypothesis.variableTo
     solver.add(Not(satisfy_statement(experiment, key, hypothesis)))
     
-    # print(solver.to_smt2())
-            
     result = solver.check()
     print('Result:', result)
     if result != sat:
@@ -44,9 +42,6 @@ def extract_model(problem_data: ProblemData, experiment, model) -> Points:
             val = f_interp.else_value()
             val_sub = substitute_vars(val, x)
             bounds = collect_bound_values(val_sub, set())
-            # sts_bounds = poi.boundaries(problem_data, a)
-            # bounds.add(sts_bounds[0])
-            # bounds.add(sts_bounds[-1])
             
             def cast(num):
                 if type(num) in [float, int]:
@@ -61,22 +56,6 @@ def extract_model(problem_data: ProblemData, experiment, model) -> Points:
                 fn_value = model.evaluate(experiment[(a, b)](bound), model_completion=True)
                 assert type(fn_value) == RatNumRef, 'Wrongly typed value found'
                 result[a][b].append( (bound, fn_value) )
-                
-                # for c in vbl.pre(problem_data.scheme, b):
-                #     if not c in problem_data.scheme.order[a]:
-                #         continue
-                    
-                #     v1 = model.evaluate(experiment[(a, c)](bound), model_completion=True)
-                #     v11 = v1.numerator_as_long() / v1.denominator_as_long()
-                #     v111 = model.evaluate(experiment[(c, b)](v11), model_completion=True) 
-                #     v1111 = v111.numerator_as_long() / v111.denominator_as_long()
-                #     v22 = fn_value.numerator_as_long() / fn_value.denominator_as_long()
-                #     v2 = model.evaluate(experiment[(c, b)](v1), model_completion=True)
-                #     print(f'On x={bound}')
-                #     print(f'{a} -> {c} -> {b}:', v2)
-                #     print(f'{a} -> {b}:', fn_value)
-                #     print(f'{a} -> {c} -> {b}:', v1111)
-                #     print(f'{a} -> {b}:', v22)
                 
     final: Points = {
         a: {

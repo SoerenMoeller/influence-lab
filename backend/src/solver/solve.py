@@ -7,43 +7,28 @@ from model.solver import Solver
 import model.points as pts
 import src.solver.sat as sat_solver
 import src.solver.uninterpreted as unintepreted_solver
+import src.solver.array as array_solver
+import src.solver.integer as integer_solver
 
 
 def solve(problem_data: ProblemData, solver_type: Solver) -> dict:
-    solve_fn_mapping = {
-        Solver.SAT: _solve_sat,
-        Solver.UNINTEPRETED_FUNCTIONS: _solve_uninterpreted
+    solver_modules = {
+        Solver.SAT: sat_solver,
+        Solver.UNINTEPRETED_FUNCTIONS: unintepreted_solver,
+        Solver.ARRAY: array_solver,
+        Solver.INTEGER: integer_solver,
     } 
     
-    solve_fn = solve_fn_mapping[solver_type]
-    points = solve_fn(problem_data)
+    solve_module = solver_modules[solver_type]
+    points = solve_module.solve(problem_data)
 
     if points is None:
         return {
             'result': False
         }
-    
+        
+    points = pts.build_composition_points(problem_data, points)
     return {
         'result': True,
         'points': points    
     }
-    
-
-def _solve_sat(problem_data: ProblemData) -> Optional[Points]:
-    sat_solver.build_formula(problem_data, 'sat-formula')
-    model = sat_solver.solve('sat-formula')
-
-    if model is None:
-        return None
-    
-    return sat_solver.extract_model(problem_data, model)
-    
-
-def _solve_uninterpreted(problem_data: ProblemData) -> Optional[Points]:
-    points = unintepreted_solver.solve(problem_data)
-    
-    if points is None:
-        return None
-    
-    points = pts.build_composition_points(problem_data, points)
-    return points

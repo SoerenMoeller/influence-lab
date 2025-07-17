@@ -6,11 +6,13 @@ import os
 import re
 
 
+from model.points_cache import PointsCache
 from model.problem_data import ProblemData
 from model.statement import Statement
 from model.scheme import Scheme
 from model.points import Point, Points
 from model.behaviour import Behaviour
+import model.variable as vbl
 import src.poi as poi
 
 
@@ -18,16 +20,13 @@ VarKey = tuple[str, str, int, int]
 VarDict = dict[VarKey, BoolRef]
 
 
-def build_formula(problem_data: ProblemData, name: str) -> None:
-    if os.path.isfile(f'formulas/{name}.smt2'):
-        print(f'Formula "{name}" is already built, skipping building it again..')
-        return
-    
-    vars = build_variables(problem_data)
+def solve(problem_data: ProblemData) -> Optional[Points]:
+    points_cache = poi.cache_points(problem_data)
+    vars = build_variables(problem_data, points_cache)
     
     sub_formulas = [
         phi_max_one,
-        phi_gap,
+        # phi_gap, probably unnecessary?
         phi_comp,
         phi_sts, 
         phi_hypothesis
@@ -35,7 +34,7 @@ def build_formula(problem_data: ProblemData, name: str) -> None:
 
     start_build = time.time()
     formula = And(*(
-        sub_formula(problem_data, vars)
+        sub_formula(problem_data, points_cache, vars)
         for sub_formula in sub_formulas
     ))
     end_build = time.time()
@@ -43,16 +42,6 @@ def build_formula(problem_data: ProblemData, name: str) -> None:
     
     s = Solver()
     s.add(formula)
-    with open(f'formulas/{name}.smt2', 'w') as f:
-        f.write(s.to_smt2())  
-
-
-def solve(name: str = 'formula') -> Optional[ModelRef]:
-    with open(f'formulas/{name}.smt2', 'r') as f:
-        smt2 = f.read() 
-    
-    s = Solver()
-    s.from_string(smt2)
 
     start_solve = time.time()
     result = s.check()
@@ -63,20 +52,20 @@ def solve(name: str = 'formula') -> Optional[ModelRef]:
 
     if not result:
         return None
-    return model
+    return extract_model(problem_data, points_cache, model, vars)
 
 
-def build_discrete_to_real(problem_data: ProblemData) -> dict[str, dict[int, float]]:
+def build_discrete_to_real(problem_data: ProblemData, points_cache: PointsCache) -> dict[str, dict[int, float]]:
     discrete_to_val: dict[str, dict[int, float]] = dict()
     for a in problem_data.scheme.variables:
         mapping: dict[int, float] = dict()
-        bounds = poi.boundaries(problem_data, a)
+        bounds = points_cache.boundaries[a]
 
         mapping[0] = bounds[0]
         old_point = 0
         old_bound = bounds[0]
         for bound in bounds[1:]:
-            distance = poi.dist(problem_data, a, old_bound, bound)
+            distance = poi.dist(problem_data, points_cache, a, old_bound, bound)
             new_point = old_point + distance + 1
 
             mapping[new_point] = bound
@@ -91,11 +80,9 @@ def build_discrete_to_real(problem_data: ProblemData) -> dict[str, dict[int, flo
     return discrete_to_val
 
 
-def extract_model(problem_data: ProblemData, model: ModelRef) -> Points:
-    discrete_to_val: dict[str, dict[int, float]] = build_discrete_to_real(problem_data)
-    
-    positive_vars = extract_positive_vars(model)
-    tuples = model_to_points(positive_vars)
+def extract_model(problem_data: ProblemData, points_cache: PointsCache, model: ModelRef, vars) -> Points:
+    discrete_to_val: dict[str, dict[int, float]] = build_discrete_to_real(problem_data, points_cache)
+    tuples = extract_positive_vars(problem_data, points_cache, model, vars)
     
     result: Points = defaultdict(lambda: defaultdict(list))
     for a, b, x, y in tuples:
@@ -104,135 +91,106 @@ def extract_model(problem_data: ProblemData, model: ModelRef) -> Points:
     return result
 
     
-def extract_positive_vars(model) -> list[str]:
-    positive_vars = []
-    for d in model.decls():
-        var_name = d.name()
-        var_value = model[d]
-        if is_true(var_value):
-            positive_vars.append(var_name)
-    return positive_vars
-    
-    
-def model_to_points(positives: list[str]) -> list[VarKey]:
-    pattern = r"B_\{\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^}]+)\s*\}"
-
+def extract_positive_vars(problem_data: ProblemData, points_cache: PointsCache, model: ModelRef, vars) -> list[tuple]:
     result = []
-    for var in positives:
-        match = re.match(pattern, var)
-        assert match, f'Could not extract value for "{var}"'
-
-        group1, group2, group3, group4 = match.groups()
-        result.append((group1, group2, int(group3), int(group4)))
+    for a in problem_data.scheme.variables:
+        for b in problem_data.scheme.order[a]:
+            for i in range(points_cache.sizes[a]):
+                for j in range(points_cache.sizes[b]):
+                    var_value = model.evaluate(vars[(a, b, i, j)], model_completion=True)
+                    assert type(var_value) == BoolRef, 'Wrong result'
+                        
+                    if var_value.py_value():
+                        result.append((a, b, i, j))
     return result
-
-
-def phi_max_one(problem_data: ProblemData, vars: VarDict):
+    
+    
+def phi_max_one(problem_data: ProblemData, points_cache: PointsCache, vars: VarDict):
     return And(*(
         Or(Not(vars[(a, b, i, j)]), Not(vars[(a, b, i, jj)]))
         for a in problem_data.scheme.variables 
         for b in problem_data.scheme.order[a]
-        for i in range(poi.size(problem_data, a))
-        for j in range(poi.size(problem_data, b))
-        for jj in range(j + 1, poi.size(problem_data, b))
+        for i in range(points_cache.sizes[a])
+        for j in range(points_cache.sizes[b])
+        for jj in range(j + 1, points_cache.sizes[b])
     ))
     
     
-def phi_gap(problem_data: ProblemData, vars: VarDict):
-    return And(*(
-        Implies(
-            And(vars[(a, b, i, ii)], vars[(a, b, k, kk)]),
-            Or(*(
-                vars[(a, b, j, jj)]
-                for jj in range(poi.size(problem_data, b))
-            ))
-        )
-        for a in problem_data.scheme.variables
-        for b in problem_data.scheme.order[a]
-        for i in range(poi.size(problem_data, a))
-        for j in range(i + 1, poi.size(problem_data, a))
-        for k in range(j + 1, poi.size(problem_data, a))
-        for ii in range(poi.size(problem_data, b))
-        for kk in range(poi.size(problem_data, b))
-    ))
-    
-    
-def phi_comp(problem_data: ProblemData, vars: VarDict):
+def phi_comp(problem_data: ProblemData, points_cache: PointsCache, vars: VarDict):
     return And(*(
         Implies(
             And(vars[(a, b, i, j)], vars[(b, c, j, k)]),
             vars[(a, c, i, k)]
         )
         for a in problem_data.scheme.variables
-        for b in problem_data.scheme.order[a]
-        for c in problem_data.scheme.order[b]
-        for i in range(poi.size(problem_data, a))
-        for j in range(poi.size(problem_data, b))
-        for k in range(poi.size(problem_data, c))
+        for b in vbl.post(problem_data.scheme, a)        
+        for c in vbl.post(problem_data.scheme, b)        
+        for i in range(points_cache.sizes[a])
+        for j in range(points_cache.sizes[b])
+        for k in range(points_cache.sizes[c])
     ))  
     
     
-def phi_hypothesis(problem_data: ProblemData, vars: VarDict):
+def phi_hypothesis(problem_data: ProblemData, points_cache: PointsCache, vars: VarDict):
     hypo = problem_data.hypothesis
     return Or(
-        Not(phi_sts_range(problem_data, vars, hypo.variableFrom, hypo.variableTo, Statement(hypo.domain, hypo.behaviour, hypo.range))),
-        Not(phi_sts_behaviour(problem_data, vars, hypo.variableFrom, hypo.variableTo, Statement(hypo.domain, hypo.behaviour, hypo.range)))
+        Not(phi_sts_range(problem_data, points_cache, vars, hypo.variableFrom, hypo.variableTo, Statement(hypo.domain, hypo.behaviour, hypo.range))),
+        Not(phi_sts_behaviour(problem_data, points_cache, vars, hypo.variableFrom, hypo.variableTo, Statement(hypo.domain, hypo.behaviour, hypo.range)))
     )
     
     
-def phi_sts(problem_data: ProblemData, vars: VarDict):
+def phi_sts(problem_data: ProblemData, points_cache: PointsCache, vars: VarDict):
     return And(*(
         And(
-            phi_sts_range(problem_data, vars, a, b, st), 
-            phi_sts_behaviour(problem_data, vars, a, b, st)
+            phi_sts_range(problem_data, points_cache, vars, a, b, st), 
+            phi_sts_behaviour(problem_data, points_cache, vars, a, b, st)
         ) 
-        for a in problem_data.scheme.variables
-        for b in problem_data.scheme.order[a]
+        for a, b in problem_data.scheme.statements
         for st in problem_data.scheme.statements[(a, b)]
     ))
     
     
-def phi_sts_range(problem_data: ProblemData, vars: VarDict, a: str, b: str, st: Statement):
+def phi_sts_range(problem_data: ProblemData, points_cache: PointsCache, vars: VarDict, a: str, b: str, st: Statement):
     return And(*(
         Or(*(
             vars[(a, b, i, j)]
-            for j in range(poi.size(problem_data, b))
-            if poi.original_point(problem_data, b, st.range.start) <= j <= poi.original_point(problem_data, b, st.range.end)
+            for j in range(points_cache.sizes[b])
+            if points_cache.og_points[b][st.range.start] <= j <= points_cache.og_points[b][st.range.end]
         ))
-        for i in range(poi.size(problem_data, a)) 
-        if poi.original_point(problem_data, a, st.domain.start) <= i <= poi.original_point(problem_data, a, st.domain.end)
+        for i in range(points_cache.sizes[a]) 
+        if points_cache.og_points[a][st.domain.start] <= i <= points_cache.og_points[a][st.domain.end]
     ))
     
 
-def phi_sts_behaviour(problem_data: ProblemData, vars: VarDict, a: str, b: str, st: Statement):
+def phi_sts_behaviour(problem_data: ProblemData, points_cache: PointsCache, vars: VarDict, a: str, b: str, st: Statement):
     return And(*(
         Implies(
             vars[(a, b, i, j)],
             Or(*(
                 vars[(a, b, ii, jj)]
-                for jj in range(poi.size(problem_data, b))
+                for jj in range(points_cache.sizes[b])
                 if st.behaviour == Behaviour.MONO or jj >= j
                 if st.behaviour == Behaviour.ANTI or jj <= j
                 if st.behaviour == Behaviour.CONST or jj == j
             ))
         )
-        for i in range(poi.size(problem_data, a))
-        for ii in range(i + 1, poi.size(problem_data, a))
-        for j in range(poi.size(problem_data, b))
-        if poi.original_point(problem_data, a, st.domain.start) <= i
-        if ii <= poi.original_point(problem_data, a, st.domain.end)
+        for i in range(points_cache.sizes[a])
+        for ii in range(i + 1, points_cache.sizes[a])
+        for j in range(points_cache.sizes[b])
+        if points_cache.og_points[a][st.domain.start] <= i
+        if ii <=  points_cache.og_points[a][st.domain.end]    
     ))
     
 
-def build_variables(problemData: ProblemData) -> VarDict: 
+def build_variables(problemData: ProblemData, points_cache: PointsCache) -> VarDict: 
     result = dict()
 
     for a, b in problemData.scheme.statements:
-        a_size = poi.size(problemData, a) 
-        b_size = poi.size(problemData, b) 
+        a_size = points_cache.sizes[a]
+        b_size = points_cache.sizes[b]
         
         for i in range(a_size):
             for j in range(b_size):
-                result[a, b, i, j] = Bool(f'B_{{{a}, {b}, {i}, {j}}}')
+                result[(a, b, i, j)] = Bool(f'B_{{{a}, {b}, {i}, {j}}}')
                 
     return result
