@@ -1,7 +1,7 @@
 import bisect
 from collections import defaultdict
 from typing import Optional
-from z3 import *
+import z3
 import time
 
 
@@ -16,7 +16,7 @@ import src.poi as poi
 
 
 VarKey = tuple[str, str, int]
-VarDict = dict[VarKey, ArithRef]
+VarDict = dict[VarKey, z3.ArithRef]
 IntermediatePoints = dict[str, dict[tuple[float, float], int]]
 PointSet = dict[str, list[int]]
 
@@ -45,7 +45,10 @@ def solve(problem_data: ProblemData) -> Optional[Points]:
         phi_comp_nonarb,
     ]
 
-    s = Solver()
+    s = z3.Solver()
+    s.set('core.minimize', True)  
+    # s.set("sat.core.minimize", "true")  
+    # s.set("smt.core.minimize", "true") 
     s.set(unsat_core=True)
     
     start_build = time.time()
@@ -71,7 +74,7 @@ def solve(problem_data: ProblemData) -> Optional[Points]:
     return extract_model(problem_data, model, vars, points_cache, point_set)
 
 
-def extract_model(problem_data: ProblemData, model: ModelRef, vars: VarDict, 
+def extract_model(problem_data: ProblemData, model: z3.ModelRef, vars: VarDict, 
                   points_cache: PointsCache, point_set: PointSet) -> Points:
     discrete_to_val: dict[str, dict[int, float]] = build_discrete_to_real(problem_data, points_cache)
     
@@ -80,7 +83,7 @@ def extract_model(problem_data: ProblemData, model: ModelRef, vars: VarDict,
         for b in problem_data.scheme.order[a]:
             for i in point_set[a]:
                 fn_value = model.evaluate(vars[(a, b, i)], model_completion=True)
-                assert type(fn_value) == IntNumRef, 'Wrong value found'
+                assert type(fn_value) == z3.IntNumRef, 'Wrong value found'
                 
                 result[a][b].append(
                     Point(
@@ -142,7 +145,7 @@ def current_points(problem_data: ProblemData, points_cache: PointsCache,
 
 def build_variables(problemData: ProblemData, points_cache: PointsCache) -> VarDict: 
     return {
-        (a, b, i): Int(f'P_{{{a}, {b}, {i}}}')
+        (a, b, i): z3.Int(f'P_{{{a}, {b}, {i}}}')
         for a in problemData.scheme.variables
         for b in problemData.scheme.order[a]
         for i in range(points_cache.sizes[a])
@@ -151,21 +154,21 @@ def build_variables(problemData: ProblemData, points_cache: PointsCache) -> VarD
     
 def phi_comp_nonarb(solver, problem_data: ProblemData, vars: VarDict, 
              points_cache: PointsCache, point_set: PointSet):
-    return And(*(
-        Implies(
-            And(
+    return z3.And(*(
+        z3.Implies(
+            z3.And(
                 vars[(a, b, point_set[a][i])] == j,
                 vars[(a, b, point_set[a][i + 1])] == k
             ),
-            Or(
-                And(
+            z3.Or(
+                z3.And(
                     vars[(b, c, point_set[b][l])] <= vars[(b, c, j)]
                     for l in range(
                         bisect.bisect_left(point_set[b], j),
                         bisect.bisect_right(point_set[b], k)
                     )
                 ),
-                And(
+                z3.And(
                     vars[(b, c, l)] >= vars[(b, c, j)]
                     for l in range(
                         bisect.bisect_left(point_set[b], j),
@@ -199,7 +202,7 @@ def phi_comp(solver, problem_data: ProblemData, vars: VarDict,
     
     for a, b, c, i, j in todo:
         solver.assert_and_track(
-            Implies(
+            z3.Implies(
                 vars[(a, b, i)] == j,
                 vars[(a, c, i)] == vars[(b, c, j)]
             ),
@@ -232,8 +235,8 @@ def phi_sts_range(solver, problem_data: ProblemData, vars: VarDict, points_cache
 
 def phi_sts_range2(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache, 
                   point_set: PointSet, a: str, b: str, st: Statement):
-    return And(*(
-        And(
+    return z3.And(*(
+        z3.And(
             vars[(a, b, i)] <= points_cache.og_points[b][st.range.end],
             points_cache.og_points[b][st.range.start] <= vars[(a, b, i)],
         )
@@ -244,7 +247,7 @@ def phi_sts_range2(problem_data: ProblemData, vars: VarDict, points_cache: Point
 
 def phi_sts_behaviour2(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache, 
                       point_set: PointSet, a: str, b: str, st: Statement):
-    return And(*(
+    return z3.And(*(
         phi_behaviour2(vars, point_set[a][i], point_set[a][i + 1], st.behaviour, a, b)
         for i in range(len(point_set[a]) - 1)
         if points_cache.og_points[a][st.domain.start] <= point_set[a][i]
@@ -299,9 +302,9 @@ def phi_behaviour(solver, vars: VarDict, i: int, next_i: int, behaviour: Behavio
 def phi_hypothesis(solver, problem_data: ProblemData, vars: VarDict, points_cache: PointsCache, point_set: PointSet):
     hypo = problem_data.hypothesis
     solver.assert_and_track(
-        Or(
-            Not(phi_sts_range2(problem_data, vars, points_cache, point_set, hypo.variableFrom, hypo.variableTo, Statement(hypo.domain, hypo.behaviour, hypo.range))),
-            Not(phi_sts_behaviour2(problem_data, vars, points_cache, point_set, hypo.variableFrom, hypo.variableTo, Statement(hypo.domain, hypo.behaviour, hypo.range)))
+        z3.Or(
+            z3.Not(phi_sts_range2(problem_data, vars, points_cache, point_set, hypo.variableFrom, hypo.variableTo, Statement(hypo.domain, hypo.behaviour, hypo.range))),
+            z3.Not(phi_sts_behaviour2(problem_data, vars, points_cache, point_set, hypo.variableFrom, hypo.variableTo, Statement(hypo.domain, hypo.behaviour, hypo.range)))
         ),
         f'hypo {problem_data.hypothesis} failed'
     )
@@ -313,7 +316,7 @@ def phi_valid(solver, problem_data: ProblemData, vars: VarDict,
         for b in problem_data.scheme.order[a]:
             for i in point_set[a]:
                 solver.assert_and_track(
-                    Or(*(
+                    z3.Or(*(
                         vars[(a, b, i)] == j
                         for j in point_set[b] 
                     )),
