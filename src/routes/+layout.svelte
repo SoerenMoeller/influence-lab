@@ -45,8 +45,10 @@
                 class="w-48 text-center border border-black rounded-lg bg-white"
                 bind:value={headerData.solverType}
             >
-                {#each ['sat', 'uninterpreted'] as solverType}
-                    <option value={solverType}>
+                {#each ['sat', 'uninterpreted', 'integer', 'array', 'incremental'] as solverType}
+                    <option 
+                        value={solverType}
+                    >
                         {solverType}
                     </option>
                 {/each}

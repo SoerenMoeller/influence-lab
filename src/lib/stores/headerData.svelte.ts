@@ -11,5 +11,5 @@ export let headerData: HeaderData = $state({
     solve: (evt: any) => {},
     currentProblem: null,
     problems: [],
-    solverType: 'sat'
+    solverType: 'incremental'
 });

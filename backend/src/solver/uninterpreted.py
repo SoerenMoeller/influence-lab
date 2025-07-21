@@ -13,7 +13,7 @@ def solve(problem_data: ProblemData) -> Optional[Points]:
     experiment = create_influences(problem_data.scheme)
 
     solver = Solver()
-    satisfy_composition(solver, experiment)
+    satisfy_composition(solver, experiment, problem_data)
             
     for key in problem_data.scheme.statements:
         for st in problem_data.scheme.statements[key]:
@@ -49,14 +49,14 @@ def extract_model(problem_data: ProblemData, experiment, model) -> Points:
                 return num.numerator_as_long() / num.denominator_as_long()
             
             for bound in sorted(bounds, key=cast):
-                # if cast(bound) < sts_bounds[0] or cast(bound) > sts_bounds[-1]:
-                #     print(f'Skipping bound "{bound}", not needed.')
-                #     continue 
-                
                 fn_value = model.evaluate(experiment[(a, b)](bound), model_completion=True)
                 assert type(fn_value) == RatNumRef, 'Wrongly typed value found'
                 result[a][b].append( (bound, fn_value) )
                 
+    return cleanup_points(result, problem_data, model, experiment)
+
+
+def cleanup_points(points, problem_data, model, experiment):
     final: Points = {
         a: {
             b: [
@@ -64,11 +64,11 @@ def extract_model(problem_data: ProblemData, experiment, model) -> Points:
                     x.numerator_as_long() / x.denominator_as_long(),
                     y.numerator_as_long() / y.denominator_as_long()
                 )
-                for x, y in result[a][b]
+                for x, y in points[a][b]
             ]
-            for b in result[a]
+            for b in points[a]
         }
-        for a in result
+        for a in points
     }
     
     for a in final:
@@ -125,60 +125,37 @@ def collect_bounds_in_cond(cond, bounds: set):
     
 def create_influences(scheme: Scheme):
     Sort = RealSort()
-    tmp = {
+    return {
         (a, b): Function(f'F_{{{a}, {b}}}', Sort, Sort)
         for a in scheme.variables
         for b in scheme.order[a]
     }
-    print(tmp)
-    return tmp
     
 
 def satisfy_statement(experiment, key, st):
-    x = Real('x')
-    y = Real('y')
     return And(
-        ForAll(
-            [x], 
-            Implies(
-                And( 
-                    x >= st.domain.start,
-                    x <= st.domain.end
-                ),
-                And(
-                    experiment[key](x) >= st.range.start,
-                    experiment[key](x) <= st.range.end,
-                )
-            )
-        ),
-        ForAll(
-            [x, y], 
-            Implies(
-                And( 
-                    x >= st.domain.start,
-                    x < y,
-                    y <= st.domain.end
-                ),
-                behaviour_constraint(st, experiment, key, x, y)
-            )
-        )      
+        satisfy_range(st, experiment, key),
+        satisfy_behaviour(st, experiment, key)
     )
     
 
-def satisfy_composition(solver, experiment):
+def satisfy_composition(solver, experiment, problem_data):
     x = Real('x')
 
-    for a, b in experiment:
-        for c, d in experiment:
-            if b != c:
-                continue
-            
-            solver.add(
-                ForAll([x], experiment[(a, d)](x) == experiment[(b, d)](experiment[(a, b)](x)))
-            )
+    for a in problem_data.scheme.variables:
+        for c in problem_data.scheme.order[a]:
+            for b in vbl.pre(problem_data.scheme, c):
+                if b not in problem_data.scheme.order[a]:
+                    continue
+
+                solver.add(
+                    ForAll([x], experiment[(a, c)](x) == experiment[(b, c)](experiment[(a, b)](x)))
+                )
         
         
-def satisfy_behaviour(st, experiment, ab, x, y):
+def satisfy_behaviour(st, experiment, key):
+    x = Real('x')
+    y = Real('y')
     return ForAll(
         [x, y], 
         Implies(
@@ -187,12 +164,13 @@ def satisfy_behaviour(st, experiment, ab, x, y):
                 x <= y,
                 y <= st.domain.end
             ),
-            behaviour_constraint(st, experiment, ab, x, y)
+            behaviour_constraint(st, experiment, key, x, y)
         )
     )      
         
 
-def satisfy_range(st, experiment, ab, x):
+def satisfy_range(st, experiment, key):
+    x = Real('x')
     return ForAll(
         [x], 
         Implies(
@@ -201,8 +179,8 @@ def satisfy_range(st, experiment, ab, x):
                 x <= st.domain.end
             ),
             And(
-                experiment[ab](x) >= st.range.start,
-                experiment[ab](x) <= st.range.end,
+                experiment[key](x) >= st.range.start,
+                experiment[key](x) <= st.range.end,
             )
         )
     )      

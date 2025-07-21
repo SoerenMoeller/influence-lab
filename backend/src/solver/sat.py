@@ -29,7 +29,8 @@ def solve(problem_data: ProblemData) -> Optional[Points]:
         # phi_gap, probably unnecessary?
         phi_comp,
         phi_sts, 
-        phi_hypothesis
+        phi_hypothesis,
+        phi_comp_nonarb,
     ]
 
     start_build = time.time()
@@ -115,6 +116,44 @@ def phi_max_one(problem_data: ProblemData, points_cache: PointsCache, vars: VarD
         for jj in range(j + 1, points_cache.sizes[b])
     ))
     
+
+def phi_comp_nonarb(problem_data: ProblemData, points_cache: PointsCache, vars: VarDict):
+    return And(*(
+        Implies(
+            And(
+                vars[(a, b, i, j)],
+                vars[(a, b, i + 1, k)],
+                vars[(b, c, j, l)]
+            ),
+            Or(
+                And(*(
+                    Or(*(
+                        vars[(b, c, jj, ll)]
+                        for ll in range(points_cache.sizes[c])
+                        if ll >= l
+                    ))
+                    for jj in range(j, k + 1)
+                )),
+                And(*(
+                    Or(*(
+                        vars[(b, c, jj, ll)]
+                        for ll in range(points_cache.sizes[c])
+                        if ll <= l
+                    ))
+                    for jj in range(j, k + 1)
+                )),
+            )
+        )
+        for a in problem_data.scheme.variables
+        for c in problem_data.scheme.order[a]
+        for b in vbl.pre(problem_data.scheme, c)
+        if b in problem_data.scheme.order[a]
+        for i in range(points_cache.sizes[a] - 1)
+        for j in range(points_cache.sizes[b])
+        for k in range(points_cache.sizes[b])
+        for l in range(points_cache.sizes[c])
+    ))  
+    
     
 def phi_comp(problem_data: ProblemData, points_cache: PointsCache, vars: VarDict):
     return And(*(
@@ -123,8 +162,9 @@ def phi_comp(problem_data: ProblemData, points_cache: PointsCache, vars: VarDict
             vars[(a, c, i, k)]
         )
         for a in problem_data.scheme.variables
-        for b in vbl.post(problem_data.scheme, a)        
-        for c in vbl.post(problem_data.scheme, b)        
+        for c in problem_data.scheme.order[a]
+        for b in vbl.pre(problem_data.scheme, c)
+        if b in problem_data.scheme.order[a]
         for i in range(points_cache.sizes[a])
         for j in range(points_cache.sizes[b])
         for k in range(points_cache.sizes[c])

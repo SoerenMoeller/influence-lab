@@ -7,9 +7,14 @@
 	let { data } = $props();
     const problems: ProblemData[] = $state(data.result);
     
-    headerData.currentProblem = problems[0];
+    headerData.currentProblem = problems[2];
     headerData.normalise = async () => {problemData = await api.normalise(problemData)};
-    headerData.solve = async () => {points = await api.solve(problemData, headerData.solverType)};
+    headerData.solve = async () => {
+        if (headerData.currentProblem != null) {
+            points = pts.initialiseDefaultPoints(headerData.currentProblem);
+        }
+        points = await api.solve(problemData, headerData.solverType)
+    };
     headerData.problems = problems;
     
     let points: Points = $state(pts.initialiseDefaultPoints(headerData.currentProblem));

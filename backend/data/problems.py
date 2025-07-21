@@ -32,5 +32,15 @@ def get_problems() -> list[ProblemData]:
                 LongStatement('a', Interval(10, 11), Behaviour.ANTI, Interval(1.3, 1.9), 'b')
             ]),
             LongStatement('a', Interval(7, 9), Behaviour.CONST, Interval(1, 2), 'b')
+        ),
+        ProblemData(
+            Scheme([
+                LongStatement('a', Interval(0, 1), Behaviour.MONO, Interval(0, 1), 'c'),
+                LongStatement('b', Interval(0, 1), Behaviour.MONO, Interval(0, 1), 'c'),
+                LongStatement('c', Interval(0, 1), Behaviour.ANTI, Interval(0, 1), 'd'),
+                LongStatement('a', Interval(0, 1), Behaviour.ANTI, Interval(0, 1), 'd'),
+                LongStatement('b', Interval(0, 1), Behaviour.CONST, Interval(0, 1), 'd'),
+            ]),
+            LongStatement('a', Interval(0, 1), Behaviour.CONST, Interval(0, 1), 'd')
         )
     ]

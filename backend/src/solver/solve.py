@@ -9,6 +9,7 @@ import src.solver.sat as sat_solver
 import src.solver.uninterpreted as unintepreted_solver
 import src.solver.array as array_solver
 import src.solver.integer as integer_solver
+import src.solver.incremental as incremental_solver
 
 
 def solve(problem_data: ProblemData, solver_type: Solver) -> dict:
@@ -17,6 +18,7 @@ def solve(problem_data: ProblemData, solver_type: Solver) -> dict:
         Solver.UNINTEPRETED_FUNCTIONS: unintepreted_solver,
         Solver.ARRAY: array_solver,
         Solver.INTEGER: integer_solver,
+        Solver.INCREMENTAL: incremental_solver,
     } 
     
     solve_module = solver_modules[solver_type]

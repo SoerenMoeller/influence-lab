@@ -29,6 +29,7 @@ def solve(problem_data: ProblemData) -> Optional[Points]:
         phi_comp,
         phi_sts, 
         phi_hypothesis,
+        phi_comp_nonarb,
     ]
 
     start_build = time.time()
@@ -105,6 +106,34 @@ def extract_model(problem_data: ProblemData, model: ModelRef, vars: VarDict, poi
         
     return result
 
+
+def phi_comp_nonarb(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache):
+    return And(*(
+        Implies(
+            And(
+                vars[(a, b, i)] == j,
+                vars[(a, b, i + 1)] == k
+            ),
+            Or(
+                And(
+                    vars[(b, c, l)] <= vars[(b, c, j)]
+                    for l in range(j, k + 1)
+                ),
+                And(
+                    vars[(b, c, l)] >= vars[(b, c, j)]
+                    for l in range(j, k + 1)
+                ) 
+            )
+        )
+        for a in problem_data.scheme.variables
+        for c in problem_data.scheme.order[a]
+        for b in vbl.pre(problem_data.scheme, c)
+        if b in problem_data.scheme.order[a]
+        for i in range(points_cache.sizes[a] - 1)
+        for j in range(points_cache.sizes[b])
+        for k in range(points_cache.sizes[b])
+    ))
+
     
 def phi_comp(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache):
     return And(*(
@@ -113,8 +142,9 @@ def phi_comp(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache
             vars[(a, c, i)] == vars[(b, c, j)]
         )
         for a in problem_data.scheme.variables
-        for b in vbl.post(problem_data.scheme, a)
-        for c in vbl.post(problem_data.scheme, b)
+        for c in problem_data.scheme.order[a]
+        for b in vbl.pre(problem_data.scheme, c)
+        if b in problem_data.scheme.order[a]
         for i in range(points_cache.sizes[a])
         for j in range(points_cache.sizes[b])
     ))  

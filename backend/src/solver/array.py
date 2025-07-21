@@ -13,7 +13,7 @@ def solve(problem_data: ProblemData) -> Optional[Points]:
     experiment = create_influences(problem_data.scheme)
 
     solver = Solver()
-    satisfy_composition(solver, experiment)
+    satisfy_composition(solver, experiment, problem_data)
             
     for key in problem_data.scheme.statements:
         for st in problem_data.scheme.statements[key]:
@@ -23,8 +23,6 @@ def solve(problem_data: ProblemData) -> Optional[Points]:
     key = hypothesis.variableFrom, hypothesis.variableTo
     solver.add(Not(satisfy_statement(experiment, key, hypothesis)))
     
-    # print(solver.to_smt2())
-            
     result = solver.check()
     print('Result:', result)
     if result != sat:
@@ -41,13 +39,9 @@ def extract_model(problem_data: ProblemData, experiment, model) -> Points:
     for a in problem_data.scheme.variables:
         for b in problem_data.scheme.order[a]:
             f_interp = model.get_interp(experiment[(a, b)])
-            print(f_interp)
-            val = f_interp.else_value()
+            val = f_interp.body()
             val_sub = substitute_vars(val, x)
             bounds = collect_bound_values(val_sub, set())
-            # sts_bounds = poi.boundaries(problem_data, a)
-            # bounds.add(sts_bounds[0])
-            # bounds.add(sts_bounds[-1])
             
             def cast(num):
                 if type(num) in [float, int]:
@@ -55,29 +49,9 @@ def extract_model(problem_data: ProblemData, experiment, model) -> Points:
                 return num.numerator_as_long() / num.denominator_as_long()
             
             for bound in sorted(bounds, key=cast):
-                # if cast(bound) < sts_bounds[0] or cast(bound) > sts_bounds[-1]:
-                #     print(f'Skipping bound "{bound}", not needed.')
-                #     continue 
-                
                 fn_value = model.evaluate(experiment[(a, b)][bound], model_completion=True)
                 assert type(fn_value) == RatNumRef, 'Wrongly typed value found'
                 result[a][b].append( (bound, fn_value) )
-                
-                # for c in vbl.pre(problem_data.scheme, b):
-                #     if not c in problem_data.scheme.order[a]:
-                #         continue
-                    
-                #     v1 = model.evaluate(experiment[(a, c)](bound), model_completion=True)
-                #     v11 = v1.numerator_as_long() / v1.denominator_as_long()
-                #     v111 = model.evaluate(experiment[(c, b)](v11), model_completion=True) 
-                #     v1111 = v111.numerator_as_long() / v111.denominator_as_long()
-                #     v22 = fn_value.numerator_as_long() / fn_value.denominator_as_long()
-                #     v2 = model.evaluate(experiment[(c, b)](v1), model_completion=True)
-                #     print(f'On x={bound}')
-                #     print(f'{a} -> {c} -> {b}:', v2)
-                #     print(f'{a} -> {b}:', fn_value)
-                #     print(f'{a} -> {c} -> {b}:', v1111)
-                #     print(f'{a} -> {b}:', v22)
                 
     final: Points = {
         a: {
@@ -155,50 +129,29 @@ def create_influences(scheme: Scheme):
     
 
 def satisfy_statement(experiment, key, st):
-    x = Real('x')
-    y = Real('y')
     return And(
-        ForAll(
-            [x], 
-            Implies(
-                And( 
-                    x >= st.domain.start,
-                    x <= st.domain.end
-                ),
-                And(
-                    experiment[key][x] >= st.range.start,
-                    experiment[key][x] <= st.range.end,
-                )
-            )
-        ),
-        ForAll(
-            [x, y], 
-            Implies(
-                And( 
-                    x >= st.domain.start,
-                    x < y,
-                    y <= st.domain.end
-                ),
-                behaviour_constraint(st, experiment, key, x, y)
-            )
-        )      
+        satisfy_range(st, experiment, key),
+        satisfy_behaviour(st, experiment, key)
     )
     
 
-def satisfy_composition(solver, experiment):
+def satisfy_composition(solver, experiment, problem_data):
     x = Real('x')
 
-    for a, b in experiment:
-        for c, d in experiment:
-            if b != c:
-                continue
-            
-            solver.add(
-                ForAll([x], experiment[(a, d)][x] == experiment[(b, d)][experiment[(a, b)][x]])
-            )
+    for a in problem_data.scheme.variables:
+        for c in problem_data.scheme.order[a]:
+            for b in vbl.pre(problem_data.scheme, c):
+                if b not in problem_data.scheme.order[a]:
+                    continue
+
+                solver.add(
+                    ForAll([x], experiment[(a, c)][x] == experiment[(b, c)][experiment[(a, b)][x]])
+                )
         
         
-def satisfy_behaviour(st, experiment, ab, x, y):
+def satisfy_behaviour(st, experiment, key):
+    x = Real('x')
+    y = Real('y')
     return ForAll(
         [x, y], 
         Implies(
@@ -207,12 +160,13 @@ def satisfy_behaviour(st, experiment, ab, x, y):
                 x <= y,
                 y <= st.domain.end
             ),
-            behaviour_constraint(st, experiment, ab, x, y)
+            behaviour_constraint(st, experiment, key, x, y)
         )
     )      
         
 
-def satisfy_range(st, experiment, ab, x):
+def satisfy_range(st, experiment, key):
+    x = Real('x')
     return ForAll(
         [x], 
         Implies(
@@ -221,8 +175,8 @@ def satisfy_range(st, experiment, ab, x):
                 x <= st.domain.end
             ),
             And(
-                experiment[ab][x] >= st.range.start,
-                experiment[ab][x] <= st.range.end,
+                experiment[key][x] >= st.range.start,
+                experiment[key][x] <= st.range.end,
             )
         )
     )      

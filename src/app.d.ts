@@ -4,7 +4,7 @@ declare global {
 	namespace App {
 	}
     
-    type Solver = 'sat' | 'uninterpreted'
+    type Solver = 'sat' | 'uninterpreted' | 'integer' | 'array' | 'incremental'
 
     type Interval = {
         start: Double;

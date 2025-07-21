@@ -7,8 +7,8 @@ from data.problems import get_problems
 
 
 def main():
-    problem_data = get_problems()[0]
-    solver_type = Solver.SAT
+    problem_data = get_problems()[2]
+    solver_type = Solver.INCREMENTAL
     result = solve(problem_data, solver_type)
     
     if not result['result']:
