@@ -44,13 +44,14 @@ def solve(problem_data: ProblemData) -> Optional[Points]:
     s.add(formula)
     start_solve = time.time()
     result = s.check()
-    model = s.model()
     end_solve = time.time()
     print(f"Solving took {end_solve - start_solve:.2f} seconds")
     print(f'Result: {result}')
 
-    if not result:
+    if result != sat:
         return None
+
+    model = s.model()
     return extract_model(problem_data, model, vars, points_cache)
 
 
@@ -196,4 +197,4 @@ def phi_behaviour(vars: VarDict, i: int, behaviour: Behaviour, a, b):
         return vars[(a, b, i)] >= vars[(a, b, i + 1)]
     if behaviour == Behaviour.CONST:
         return vars[(a, b, i)] == vars[(a, b, i + 1)]
-    assert False, 'unreachable'
+    return True

@@ -33,46 +33,83 @@ def solve(problem_data: ProblemData) -> Optional[Points]:
     }
     
     vars = build_variables(problem_data, points_cache)
-    point_set = current_points(problem_data, points_cache, intermediate)
+
+    while True:
+        point_set = current_points(problem_data, points_cache, intermediate)
+
+        result, solver = attempt_solving(problem_data, vars, points_cache, point_set)
+        if result == z3.sat:
+            model = solver.model()
+            return extract_model(problem_data, model, vars, points_cache, point_set)
+        
+        problems = [parse_pattern(str(reason)) for reason in solver.unsat_core()]
+        problem_vars = {b for _, b, _ in problems} 
+
+        for var in problem_vars:
+            for pair in intermediate[var]:
+                if intermediate[var][pair] == points_cache.poi_sizes[var][pair]:
+                    return None
+                intermediate[var][pair] += 1
+
+        print(intermediate)
     
+    
+def parse_pattern(content: str):
+    assert content.startswith('F('), 'Prefix missing'
+    content = content[2:]
+    
+    contents = content.split(',')
+    assert len(contents) == 2, 'There should only be one comma'
+   
+    var1 = contents[0] 
+    content = contents[1]
+    
+    contents = content.split(')')
+    assert len(contents) == 3, 'There should only be two closing brackets'
+
+    var2 = contents[0]
+    
+    assert contents[1].startswith('('), 'Should start with opening bracket'
+    content = contents[1][1:]
+    
+    assert content.isdigit(), 'Should be a number'
+    value = int(content)
+    
+    return var1, var2, value
+
+
+def attempt_solving(problem_data, vars, points_cache, point_set):
+    solver = z3.Solver()
+    solver.set('core.minimize', True)  
+    solver.set(unsat_core=True)
+    
+    start_build = time.time()
+
     sub_formulas = [
-        # phi_max_one, fällt weg
-        # phi_gap,     fällt weg
         phi_comp,
         phi_sts, 
         phi_hypothesis,
-        phi_valid,
         phi_comp_nonarb,
     ]
 
-    s = z3.Solver()
-    s.set('core.minimize', True)  
-    # s.set("sat.core.minimize", "true")  
-    # s.set("smt.core.minimize", "true") 
-    s.set(unsat_core=True)
+    solver.add(
+        z3.And(*(
+            sub_formula(problem_data, vars, points_cache, point_set)
+            for sub_formula in sub_formulas
+        )
+    ))
+    phi_valid_points(solver, problem_data, vars, points_cache, point_set)
     
-    start_build = time.time()
-    for sub_formula in sub_formulas:
-        sub_formula(s, problem_data, vars, points_cache, point_set)
     end_build = time.time()
     print(f'Formula built in {end_build - start_build:.2f} seconds')
 
-    # include a second hypothesis
-    problem_data.hypothesis = LongStatement('b', Interval(0, 1), Behaviour.CONST, Interval(0, 1), 'c')
-    phi_hypothesis(s, problem_data, vars, points_cache, point_set)
-
     start_solve = time.time()
-    result = s.check()
+    result = solver.check()
     end_solve = time.time()
     print(f"Solving took {end_solve - start_solve:.2f} seconds")
     print(f'Result: {result}')
     
-    if result != 'sat':
-        print(s.unsat_core())
-        return None
-    model = s.model()
-    return extract_model(problem_data, model, vars, points_cache, point_set)
-
+    return result, solver
 
 def extract_model(problem_data: ProblemData, model: z3.ModelRef, vars: VarDict, 
                   points_cache: PointsCache, point_set: PointSet) -> Points:
@@ -91,8 +128,7 @@ def extract_model(problem_data: ProblemData, model: z3.ModelRef, vars: VarDict,
                         discrete_to_val[b][fn_value.as_long()]
                     )
                 )
-        
-
+     
     return result
 
 
@@ -152,7 +188,7 @@ def build_variables(problemData: ProblemData, points_cache: PointsCache) -> VarD
     }
     
     
-def phi_comp_nonarb(solver, problem_data: ProblemData, vars: VarDict, 
+def phi_comp_nonarb(problem_data: ProblemData, vars: VarDict, 
              points_cache: PointsCache, point_set: PointSet):
     return z3.And(*(
         z3.Implies(
@@ -188,129 +224,76 @@ def phi_comp_nonarb(solver, problem_data: ProblemData, vars: VarDict,
 
     
 
-def phi_comp(solver, problem_data: ProblemData, vars: VarDict, 
+def phi_comp(problem_data: ProblemData, vars: VarDict, 
              points_cache: PointsCache, point_set: PointSet):
-    todo = (
-        (a, b, c, i, j)
+    return z3.And(*(
+        z3.Implies(
+            vars[(a, b, i)] == j,
+            vars[(a, c, i)] == vars[(b, c, j)]
+        )
         for a in problem_data.scheme.variables
         for c in problem_data.scheme.order[a]
         for b in vbl.pre(problem_data.scheme, c)
         if b in problem_data.scheme.order[a]
         for i in point_set[a]        
         for j in point_set[b]
-    )
-    
-    for a, b, c, i, j in todo:
-        solver.assert_and_track(
-            z3.Implies(
-                vars[(a, b, i)] == j,
-                vars[(a, c, i)] == vars[(b, c, j)]
-            ),
-            f'comp failed {(a, b, c, i, j)}' 
+    ))
+
+
+def phi_sts(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache, point_set: PointSet):
+    return z3.And(*(
+        z3.And(
+            phi_sts_range(problem_data, vars, points_cache, point_set, a, b, st),
+            phi_sts_behaviour(problem_data, vars, points_cache, point_set, a, b, st)
         )
-
-
-def phi_sts(solver, problem_data: ProblemData, vars: VarDict, points_cache: PointsCache, point_set: PointSet):
-    for a, b in problem_data.scheme.statements:
-        for st in problem_data.scheme.statements[(a, b)]:
-            phi_sts_range(solver, problem_data, vars, points_cache, point_set, a, b, st)
-            phi_sts_behaviour(solver, problem_data, vars, points_cache, point_set, a, b, st)
+        for a, b in problem_data.scheme.statements
+        for st in problem_data.scheme.statements[(a, b)]
+    ))
     
     
-def phi_sts_range(solver, problem_data: ProblemData, vars: VarDict, points_cache: PointsCache, 
-                  point_set: PointSet, a: str, b: str, st: Statement):
-    for i in point_set[a]:
-        if not points_cache.og_points[a][st.domain.start] <= i <= points_cache.og_points[a][st.domain.end]:
-            continue
-
-        solver.assert_and_track(
-            vars[(a, b, i)] <= points_cache.og_points[b][st.range.end],
-            f'range failed {(a, b, i, st)} end'
-        )
-        solver.assert_and_track(
-            points_cache.og_points[b][st.range.start] <= vars[(a, b, i)],
-            f'range failed {(a, b, i, st)} start'
-        ) 
-        
-
-def phi_sts_range2(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache, 
+def phi_sts_range(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache, 
                   point_set: PointSet, a: str, b: str, st: Statement):
     return z3.And(*(
         z3.And(
             vars[(a, b, i)] <= points_cache.og_points[b][st.range.end],
-            points_cache.og_points[b][st.range.start] <= vars[(a, b, i)],
+            points_cache.og_points[b][st.range.start] <= vars[(a, b, i)]
         )
+        
         for i in point_set[a]
         if points_cache.og_points[a][st.domain.start] <= i <= points_cache.og_points[a][st.domain.end]
     ))
-    
+        
 
-def phi_sts_behaviour2(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache, 
+def phi_sts_behaviour(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache, 
                       point_set: PointSet, a: str, b: str, st: Statement):
     return z3.And(*(
-        phi_behaviour2(vars, point_set[a][i], point_set[a][i + 1], st.behaviour, a, b)
+        phi_behaviour(vars, point_set[a][i], point_set[a][i + 1], st.behaviour, a, b)
         for i in range(len(point_set[a]) - 1)
         if points_cache.og_points[a][st.domain.start] <= point_set[a][i]
         if point_set[a][i + 1] <= points_cache.og_points[a][st.domain.end]
     ))
     
 
-def phi_sts_behaviour(solver, problem_data: ProblemData, vars: VarDict, points_cache: PointsCache, 
-                      point_set: PointSet, a: str, b: str, st: Statement):
-    for i in range(len(point_set[a]) - 1):
-        if not points_cache.og_points[a][st.domain.start] <= point_set[a][i]:
-            continue
-        
-        if not point_set[a][i + 1] <= points_cache.og_points[a][st.domain.end]:
-            continue
-        
-        phi_behaviour(solver, vars, point_set[a][i], point_set[a][i + 1], st.behaviour, a, b)
-        
-    
-def phi_behaviour2(vars: VarDict, i: int, next_i: int, behaviour: Behaviour, a, b):
+def phi_behaviour(vars: VarDict, i: int, next_i: int, behaviour: Behaviour, a, b):
     if behaviour == Behaviour.MONO:
         return vars[(a, b, i)] <= vars[(a, b, next_i)]
     if behaviour == Behaviour.ANTI:
         return vars[(a, b, i)] >= vars[(a, b, next_i)]
     if behaviour == Behaviour.CONST:
         return vars[(a, b, i)] == vars[(a, b, next_i)]
-    assert False, 'unreachable'
-    
+    return True 
 
-def phi_behaviour(solver, vars: VarDict, i: int, next_i: int, behaviour: Behaviour, a, b):
-    if behaviour == Behaviour.MONO:
-        solver.assert_and_track(
-            vars[(a, b, i)] <= vars[(a, b, next_i)],
-            f'behaviour failed {(i, next_i, a, b)} mono'
-        )
-        return
-    if behaviour == Behaviour.ANTI:
-        solver.assert_and_track(
-            vars[(a, b, i)] >= vars[(a, b, next_i)],
-            f'behaviour failed {(i, next_i, a, b)} anti'
-        )
-        return
-    if behaviour == Behaviour.CONST:
-        solver.assert_and_track(
-            vars[(a, b, i)] == vars[(a, b, next_i)],
-            f'behaviour failed {(i, next_i, a, b)} const'
-        )
-        return
-    assert False, 'unreachable'
-    
-
-def phi_hypothesis(solver, problem_data: ProblemData, vars: VarDict, points_cache: PointsCache, point_set: PointSet):
+def phi_hypothesis(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache, point_set: PointSet):
     hypo = problem_data.hypothesis
-    solver.assert_and_track(
-        z3.Or(
-            z3.Not(phi_sts_range2(problem_data, vars, points_cache, point_set, hypo.variableFrom, hypo.variableTo, Statement(hypo.domain, hypo.behaviour, hypo.range))),
-            z3.Not(phi_sts_behaviour2(problem_data, vars, points_cache, point_set, hypo.variableFrom, hypo.variableTo, Statement(hypo.domain, hypo.behaviour, hypo.range)))
-        ),
-        f'hypo {problem_data.hypothesis} failed'
+    shortHypo = Statement(hypo.domain, hypo.behaviour, hypo.range)
+    a, b = hypo.variableFrom, hypo.variableTo
+    return z3.Or(
+        z3.Not(phi_sts_range(problem_data, vars, points_cache, point_set, a, b, shortHypo)),
+        z3.Not(phi_sts_behaviour(problem_data, vars, points_cache, point_set, a, b, shortHypo))
     )
 
 
-def phi_valid(solver, problem_data: ProblemData, vars: VarDict, 
+def phi_valid_points(solver, problem_data: ProblemData, vars: VarDict, 
              points_cache: PointsCache, point_set: PointSet):
     for a in problem_data.scheme.variables:
         for b in problem_data.scheme.order[a]:
@@ -320,5 +303,5 @@ def phi_valid(solver, problem_data: ProblemData, vars: VarDict,
                         vars[(a, b, i)] == j
                         for j in point_set[b] 
                     )),
-                    f'valid failed {(a, b, i)}'
+                    f'F({a},{b})({i})'
                 )

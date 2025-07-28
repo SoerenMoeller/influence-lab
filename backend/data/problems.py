@@ -35,12 +35,15 @@ def get_problems() -> list[ProblemData]:
         ),
         ProblemData(
             Scheme([
-                LongStatement('a', Interval(0, 1), Behaviour.MONO, Interval(0, 1), 'c'),
+                LongStatement('a', Interval(0, 1), Behaviour.ANTI, Interval(0, 1), 'b'),
                 LongStatement('b', Interval(0, 1), Behaviour.MONO, Interval(0, 1), 'c'),
-                LongStatement('c', Interval(0, 1), Behaviour.ANTI, Interval(0, 1), 'd'),
+                LongStatement('a', Interval(0, 1), Behaviour.CONST, Interval(0, 1), 'c'),
+                LongStatement('b', Interval(0, 1), Behaviour.MONO, Interval(0, 1), 'd'),
                 LongStatement('a', Interval(0, 1), Behaviour.ANTI, Interval(0, 1), 'd'),
-                LongStatement('b', Interval(0, 1), Behaviour.CONST, Interval(0, 1), 'd'),
+                # LongStatement('b', Interval(-1, 0), Behaviour.MONO, Interval(-0.5, 0), 'c'),
+                # LongStatement('b', Interval(1, 2), Behaviour.MONO, Interval(0.5, 1.5), 'c'),
             ]),
-            LongStatement('a', Interval(0, 1), Behaviour.CONST, Interval(0, 1), 'd')
+            LongStatement('a', Interval(0, 1), Behaviour.CONST, Interval(0, 1), 'd'),
         )
     ]
+    

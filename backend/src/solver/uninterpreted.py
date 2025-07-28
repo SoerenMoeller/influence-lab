@@ -193,5 +193,5 @@ def behaviour_constraint(st, experiment, ab, x, y):
         return experiment[ab](x) >= experiment[ab](y)
     if st.behaviour == Behaviour.CONST:
         return experiment[ab](x) == experiment[ab](y)
-    assert False, 'unreachable'
+    return True
     
