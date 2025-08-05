@@ -7,7 +7,7 @@
 	let { data } = $props();
     const problems: ProblemData[] = $state(data.result);
     
-    headerData.currentProblem = problems[2];
+    headerData.currentProblem = problems[3];
     headerData.normalise = async () => {problemData = await api.normalise(problemData)};
     headerData.solve = async () => {
         if (headerData.currentProblem != null) {

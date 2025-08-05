@@ -33,7 +33,7 @@
     class="w-full bg-white rounded-xl shadow p-6 relative"
 >
     <svg
-        class="w-full h-auto block cursor-default"
+        class="w-full h-auto block cursor-default focus:outline-none"
         viewBox={`0 0 ${svgConfig.width} ${svgConfig.height}`}
         preserveAspectRatio="xMidYMin meet"
         role="button"

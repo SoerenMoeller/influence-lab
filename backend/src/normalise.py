@@ -35,7 +35,7 @@ def overlap_free(problem_data: ProblemData, var_from: str, statements: list[Stat
         overlapping = rules.overlapping(statements, Interval(x, y))
         st = rules.intersect(overlapping, Interval(x, y))
         
-        if result is not None:
+        if st is not None:
             result.append(st)
 
     return result
