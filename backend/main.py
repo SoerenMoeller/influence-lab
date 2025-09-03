@@ -1,8 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+
 import src.normalise as norm
 import data.problems as data
+import data.flat as flat
+import data.comp as comp
 import model.problem_data as pbd
 import model.points as pts
 from model.solver import Solver
@@ -11,9 +14,12 @@ from src.solver.solve import solve
 
 app = FastAPI()
 
+
 origins = [
-    "http://localhost:5173",
+    # "http://localhost:5173",
+    "*",
 ]
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,15 +30,17 @@ app.add_middleware(
 )
 
 
-@app.get('/api/schemes')
+@app.get("/api/schemes")
 def get_schemes():
     problems = data.get_problems()
+    problems.append(flat.get_problem(50, 0.1))
+    problems.append(comp.get_problem(50, 0.1, 3))
     result = [pbd.serialise_problem_data(problem_data) for problem_data in problems]
-    
+
     return result
 
 
-@app.post('/api/normalise')
+@app.post("/api/normalise")
 def normalise(payload: dict):
     problem_data = pbd.deserialise_problem_data(payload)
     problem_data = norm.normalise(problem_data)
@@ -41,14 +49,15 @@ def normalise(payload: dict):
     return result
 
 
-@app.post('/api/solve')
+@app.post("/api/solve")
 def solve_(payload: dict):
-    problem_data = pbd.deserialise_problem_data(payload['problem'])
-    solver_type = Solver(payload['solver'])
+    print('hello')
+    problem_data = pbd.deserialise_problem_data(payload["problem"])
+    solver_type = Solver(payload["solver"])
     result = solve(problem_data, solver_type)
 
-    if not result['result']:
-        result['points'] = []
+    if not result["result"]:
+        result["points"] = []
     else:
-        result['points'] = pts.serialise_points(result['points'])
+        result["points"] = pts.serialise_points(result["points"])
     return result

@@ -143,11 +143,8 @@ def satisfy_composition(solver, experiment, problem_data):
     x = Real('x')
 
     for a in problem_data.scheme.variables:
-        for c in problem_data.scheme.order[a]:
-            for b in vbl.pre(problem_data.scheme, c):
-                if b not in problem_data.scheme.order[a]:
-                    continue
-
+        for b in problem_data.scheme.order[a]:
+            for c in problem_data.scheme.order[b]:
                 solver.add(
                     ForAll([x], experiment[(a, c)](x) == experiment[(b, c)](experiment[(a, b)](x)))
                 )
