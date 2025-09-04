@@ -33,7 +33,9 @@
     <rect
         bind:this={statementElement} 
         width={xMapping(statement.domain.end) - xMapping(statement.domain.start)}
-        height={yMapping(statement.range.start) - yMapping(statement.range.end)}
+        height={
+            Math.max(yMapping(statement.range.start) - yMapping(statement.range.end), 1)
+        }
         x={xMapping(statement.domain.start)}
         y={yMapping(statement.range.end)}
         fill-opacity="0"

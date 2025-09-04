@@ -7,7 +7,8 @@
 	let { data } = $props();
     const problems: ProblemData[] = $state(data.result);
     
-    headerData.currentProblem = problems[2];
+    // ===== Initialize header data ===== //
+    headerData.currentProblem = problems[4];
     headerData.normalise = async () => {problemData = await api.normalise(problemData)};
     headerData.solve = async () => {
         if (headerData.currentProblem != null) {
@@ -32,7 +33,7 @@
 
 <div 
     id="scheme-container"
-    class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 justify-center p-6 gap-6"
+    class="grid grid-cols-2 justify-center p-6 gap-6"
 >
     {#key problemData}
         {#each [...scheme.statements] as [variableFrom, innerMap]}
