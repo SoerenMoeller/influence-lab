@@ -1,3 +1,6 @@
+/*
+    * test
+*/
 export function initialiseDefaultPoints(problemData: ProblemData) {
     const initialPoints: Points = new Map();
 
