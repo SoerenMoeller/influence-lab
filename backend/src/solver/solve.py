@@ -2,6 +2,7 @@ from typing import Optional
 from model.points import Points
 from model.problem_data import ProblemData
 from model.solver import Solver
+import time
 
 
 import model.points as pts
@@ -22,7 +23,12 @@ def solve(problem_data: ProblemData, solver_type: Solver) -> dict:
     } 
     
     solve_module = solver_modules[solver_type]
-    points = solve_module.solve(problem_data)
+    start_time = time.time()
+    solve = solve_module.build_formula(problem_data) 
+    print( f"Build time: {time.time() - start_time:.2f}s")
+    start_time = time.time()
+    points = solve()
+    print( f"Solve time: {time.time() - start_time:.2f}s")
 
     if points is None:
         return {

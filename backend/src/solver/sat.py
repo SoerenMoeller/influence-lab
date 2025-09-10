@@ -1,9 +1,6 @@
 from collections import defaultdict
 from typing import Optional
 from z3 import *
-import time
-import os
-import re
 
 
 from model.points_cache import PointsCache
@@ -20,7 +17,7 @@ VarKey = tuple[str, str, int, int]
 VarDict = dict[VarKey, BoolRef]
 
 
-def solve(problem_data: ProblemData) -> Optional[Points]:
+def build_formula(problem_data: ProblemData):
     points_cache = poi.cache_points(problem_data)
     vars = build_variables(problem_data, points_cache)
     
@@ -33,27 +30,23 @@ def solve(problem_data: ProblemData) -> Optional[Points]:
         phi_comp_nonarb,
     ]
 
-    start_build = time.time()
     formula = And(*(
         sub_formula(problem_data, points_cache, vars)
         for sub_formula in sub_formulas
     ))
-    end_build = time.time()
-    print(f"Formula built in {end_build - start_build:.2f} seconds")
     
-    s = Solver()
-    s.add(formula)
+    def solve() -> Optional[Points]:
+        s = Solver()
+        s.add(formula)
 
-    start_solve = time.time()
-    result = s.check()
-    model = s.model()
-    end_solve = time.time()
-    print(f"Solving took {end_solve - start_solve:.2f} seconds")
-    print(f'Result: {result}')
+        result = s.check()
+        model = s.model()
 
-    if not result:
-        return None
-    return extract_model(problem_data, points_cache, model, vars)
+        if not result:
+            return None
+        return extract_model(problem_data, points_cache, model, vars)
+
+    return solve
 
 
 def build_discrete_to_real(problem_data: ProblemData, points_cache: PointsCache) -> dict[str, dict[int, float]]:

@@ -21,7 +21,7 @@ IntermediatePoints = dict[str, dict[tuple[float, float], int]]
 PointSet = dict[str, list[int]]
 
 
-def solve(problem_data: ProblemData) -> Optional[Points]:
+def build_formula(problem_data: ProblemData):
     points_cache: PointsCache = poi.cache_points(problem_data)
     
     intermediate = {
@@ -34,24 +34,24 @@ def solve(problem_data: ProblemData) -> Optional[Points]:
     
     vars = build_variables(problem_data, points_cache)
 
-    while True:
-        point_set = current_points(problem_data, points_cache, intermediate)
+    def solve() -> Optional[Points]:
+        while True:
+            point_set = current_points(problem_data, points_cache, intermediate)
 
-        result, solver = attempt_solving(problem_data, vars, points_cache, point_set)
-        if result == z3.sat:
-            model = solver.model()
-            return extract_model(problem_data, model, vars, points_cache, point_set)
-        
-        problems = [parse_pattern(str(reason)) for reason in solver.unsat_core()]
-        problem_vars = {b for _, b, _ in problems} 
+            result, solver = attempt_solving(problem_data, vars, points_cache, point_set)
+            if result == z3.sat:
+                model = solver.model()
+                return extract_model(problem_data, model, vars, points_cache, point_set)
+            
+            problems = [parse_pattern(str(reason)) for reason in solver.unsat_core()]
+            problem_vars = {b for _, b, _ in problems} 
 
-        for var in problem_vars:
-            for pair in intermediate[var]:
-                if intermediate[var][pair] == points_cache.poi_sizes[var][pair]:
-                    return None
-                intermediate[var][pair] += 1
-
-        print(intermediate)
+            for var in problem_vars:
+                for pair in intermediate[var]:
+                    if intermediate[var][pair] == points_cache.poi_sizes[var][pair]:
+                        return None
+                    intermediate[var][pair] += 1
+    return solve
     
     
 def parse_pattern(content: str):
@@ -83,8 +83,6 @@ def attempt_solving(problem_data, vars, points_cache, point_set):
     solver.set('core.minimize', True)  
     solver.set(unsat_core=True)
     
-    start_build = time.time()
-
     sub_formulas = [
         phi_comp,
         phi_sts, 
@@ -100,14 +98,8 @@ def attempt_solving(problem_data, vars, points_cache, point_set):
     ))
     phi_valid_points(solver, problem_data, vars, points_cache, point_set)
     
-    end_build = time.time()
-    print(f'Formula built in {end_build - start_build:.2f} seconds')
 
-    start_solve = time.time()
     result = solver.check()
-    end_solve = time.time()
-    print(f"Solving took {end_solve - start_solve:.2f} seconds")
-    print(f'Result: {result}')
     
     return result, solver
 

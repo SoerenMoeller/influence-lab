@@ -9,7 +9,7 @@ import model.variable as vbl
 import src.poi as poi
 
 
-def solve(problem_data: ProblemData) -> Optional[Points]:
+def build_formula(problem_data: ProblemData):
     experiment = create_influences(problem_data.scheme)
 
     solver = Solver()
@@ -23,13 +23,14 @@ def solve(problem_data: ProblemData) -> Optional[Points]:
     key = hypothesis.variableFrom, hypothesis.variableTo
     solver.add(Not(satisfy_statement(experiment, key, hypothesis)))
     
-    result = solver.check()
-    print('Result:', result)
-    if result != sat:
-        return None
+    def solve() -> Optional[Points]:
+        result = solver.check()
+        if result != sat:
+            return None
 
-    model = solver.model()
-    return extract_model(problem_data, experiment, model)
+        model = solver.model()
+        return extract_model(problem_data, experiment, model)
+    return solve
                     
                     
 def extract_model(problem_data: ProblemData, experiment, model) -> Points:

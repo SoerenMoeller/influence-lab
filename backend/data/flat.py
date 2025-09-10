@@ -30,4 +30,5 @@ def get_problem(size_domain: int, range_offset: float) -> ProblemData:
 
 
 if __name__ == "__main__":
+    print("hi")
     get_problem(10, 10)

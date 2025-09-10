@@ -18,7 +18,7 @@ VarKey = tuple[str, str, int]
 VarDict = dict[VarKey, ArithRef]
 
 
-def solve(problem_data: ProblemData) -> Optional[Points]:
+def build_formula(problem_data: ProblemData):
     points_cache = poi.cache_points(problem_data)
     
     vars = build_variables(problem_data, points_cache)
@@ -32,27 +32,22 @@ def solve(problem_data: ProblemData) -> Optional[Points]:
         phi_comp_nonarb,
     ]
 
-    start_build = time.time()
     formula = And(*(
         sub_formula(problem_data, vars, points_cache)
         for sub_formula in sub_formulas
     ))
-    end_build = time.time()
-    print(f"Formula built in {end_build - start_build:.2f} seconds")
     
-    s = Solver()
-    s.add(formula)
-    start_solve = time.time()
-    result = s.check()
-    end_solve = time.time()
-    print(f"Solving took {end_solve - start_solve:.2f} seconds")
-    print(f'Result: {result}')
+    def solve() -> Optional[Points]:
+        s = Solver()
+        s.add(formula)
+        result = s.check()
 
-    if result != sat:
-        return None
+        if result != sat:
+            return None
 
-    model = s.model()
-    return extract_model(problem_data, model, vars, points_cache)
+        model = s.model()
+        return extract_model(problem_data, model, vars, points_cache)
+    return solve
 
 
 def build_variables(problemData: ProblemData, points_cache: PointsCache) -> VarDict: 
