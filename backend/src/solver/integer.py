@@ -36,6 +36,8 @@ def build_formula(problem_data: ProblemData):
         sub_formula(problem_data, vars, points_cache)
         for sub_formula in sub_formulas
     ))
+
+    print("build")
     
     def solve() -> Optional[Points]:
         s = Solver()
@@ -104,34 +106,38 @@ def extract_model(problem_data: ProblemData, model: ModelRef, vars: VarDict, poi
 
 
 def phi_comp_nonarb(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache):
-    return And(*(
-        Implies(
-            And(
-                vars[(a, b, i)] == j,
-                vars[(a, b, i + 1)] == k
-            ),
-            Or(
-                And(
-                    vars[(b, c, l)] <= vars[(b, c, j)]
-                    for l in range(j, k + 1)
-                ),
-                And(
-                    vars[(b, c, l)] >= vars[(b, c, j)]
-                    for l in range(j, k + 1)
-                ) 
-            )
-        )
-        for a in problem_data.scheme.variables
-        for c in problem_data.scheme.order[a]
-        for b in vbl.pre(problem_data.scheme, c)
-        if b in problem_data.scheme.order[a]
-        for i in range(points_cache.sizes[a] - 1)
-        for j in range(points_cache.sizes[b])
-        for k in range(points_cache.sizes[b])
-    ))
+    result = [] 
+    for a in problem_data.scheme.variables:
+        for c in problem_data.scheme.order[a]:
+            print("teststst")
+            for b in vbl.pre(problem_data.scheme, c):
+                if b in problem_data.scheme.order[a]:
+                    for i in range(points_cache.sizes[a] - 1):
+                        for j in range(points_cache.sizes[b]):
+                            for k in range(points_cache.sizes[b]):
+                                result.append(
+                                    Implies(
+                                        And(
+                                            vars[(a, b, i)] == j,
+                                            vars[(a, b, i + 1)] == k
+                                        ),
+                                        Or(
+                                            And(
+                                                vars[(b, c, l)] <= vars[(b, c, j)]
+                                                for l in range(j, k + 1)
+                                            ),
+                                            And(
+                                                vars[(b, c, l)] >= vars[(b, c, j)]
+                                                for l in range(j, k + 1)
+                                            ) 
+                                        )
+                                    )
+                                )
+    return And(*result)
 
     
 def phi_comp(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache):
+    print("running phi comp")
     return And(*(
         Implies(
             vars[(a, b, i)] == j,
@@ -147,6 +153,7 @@ def phi_comp(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache
     
     
 def phi_hypothesis(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache):
+    print("running phi hypo")
     hypo = problem_data.hypothesis
     return Or(
         Not(phi_sts_range(problem_data, vars, points_cache, hypo.variableFrom, hypo.variableTo, Statement(hypo.domain, hypo.behaviour, hypo.range))),
@@ -155,6 +162,7 @@ def phi_hypothesis(problem_data: ProblemData, vars: VarDict, points_cache: Point
     
     
 def phi_sts(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache):
+    print("running phi sts")
     return And(*(
         And(
             phi_sts_range(problem_data, vars, points_cache, a, b, st), 
@@ -166,6 +174,7 @@ def phi_sts(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache)
     
     
 def phi_sts_range(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache, a: str, b: str, st: Statement):
+    print("running phi sts range")
     return And(*(
         And((
             vars[(a, b, i)] <= points_cache.og_points[b][st.range.end],
@@ -177,6 +186,7 @@ def phi_sts_range(problem_data: ProblemData, vars: VarDict, points_cache: Points
     
 
 def phi_sts_behaviour(problem_data: ProblemData, vars: VarDict, points_cache: PointsCache, a: str, b: str, st: Statement):
+    print("running phi sts behaviour")
     return And(*(
         phi_behaviour(vars, i, st.behaviour, a, b)
         for i in range(points_cache.sizes[a])
@@ -186,6 +196,7 @@ def phi_sts_behaviour(problem_data: ProblemData, vars: VarDict, points_cache: Po
     
 
 def phi_behaviour(vars: VarDict, i: int, behaviour: Behaviour, a, b):
+    print("running phi behaviour")
     if behaviour == Behaviour.MONO:
         return vars[(a, b, i)] <= vars[(a, b, i + 1)]
     if behaviour == Behaviour.ANTI:

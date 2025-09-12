@@ -1,28 +1,23 @@
 import bisect
-from collections import namedtuple
-from math import pi, sin
+from dataclasses import dataclass
 from typing import Iterator
 
 
 from model.behaviour import Behaviour
-from model.scheme import Scheme
 from model.interval import Interval
-from model.problem_data import ProblemData
 from model.statement import LongStatement
 
 
-BenchmarkParameters = namedtuple(
-    "BenchmarkParameters",
-    [
-        "definition_start",
-        "definition_end",
-        "overlap_area",
-        "statement_width",
-        "range_offset",
-        "size_domain",
-    ],
-)
-
+@dataclass
+class BenchmarkParameters:
+    definition_start: float
+    definition_end: float
+    overlap_area: float
+    statement_width: float
+    range_offset: float
+    size_domain: float
+    
+    
 
 def points_to_piecewise_linear(points: list[tuple[float, float]]):
     if not points:
