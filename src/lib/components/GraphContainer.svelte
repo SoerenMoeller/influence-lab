@@ -3,13 +3,16 @@
     import StatementComponent from "./Statement.svelte";
     import SVG from "./SVG.svelte";
     import { svgConfig } from "$lib/modules/svgConfig";
+    import { headerData } from "$lib/stores/headerData.svelte";
 
-    const props = $props();
-    const scheme: Scheme = $derived(props.scheme) as Scheme;
-    const variableFrom: string = props.variableFrom as string;
-    const variableTo: string = props.variableTo as string;
-    const hypothesis: Hypothesis = props.hypothesis;
-    const points: Point[] = $derived(props.points);
+    let { scheme, variableFrom, variableTo, hypothesis, points } = $props<{
+        scheme: Scheme;
+        variableFrom: string;
+        variableTo: string;
+        hypothesis: Hypothesis;
+        points: Point[];
+    }>();
+
     const statements = $derived(
         scheme.statements.get(variableFrom)?.get(variableTo) ?? [],
     );
@@ -17,14 +20,14 @@
     const boundsVariableFrom = $derived(getBoundaries(variableFrom));
     const boundsVariableTo = $derived(getBoundaries(variableTo));
     const offsetVariableFrom = $derived.by(() => {
-        if ((boundsVariableFrom.max - boundsVariableFrom.min) == 0) {
+        if (boundsVariableFrom.max - boundsVariableFrom.min == 0) {
             return 1;
         } else {
             return (boundsVariableFrom.max - boundsVariableFrom.min) * 0.1;
         }
     });
     const offsetVariableTo = $derived.by(() => {
-        if ((boundsVariableTo.max - boundsVariableTo.min) == 0) {
+        if (boundsVariableTo.max - boundsVariableTo.min == 0) {
             return 1;
         } else {
             return (boundsVariableTo.max - boundsVariableTo.min) * 0.1;
@@ -110,56 +113,72 @@
     }
 </script>
 
-<SVG
-    {minValueDomain}
-    {maxValueDomain}
-    {minValueRange}
-    {maxValueRange}
-    {xMapping}
-    {yMapping}
-    xLabel={variableFrom}
-    yLabel={variableTo}
->
-    {#each statements as st}
-        <StatementComponent
-            statement={st}
-            {xMapping}
-            {yMapping}
-            highlighted={false}
-        />
-    {/each}
+<div class="bg-white border border-gray-100 rounded-xl p-4">
+    <p
+        class="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2"
+    >
+        {variableFrom} → {variableTo}
+    </p>
 
-    {#if variableFrom == hypothesis.variableFrom && variableTo == hypothesis.variableTo}
-        <StatementComponent
-            statement={{
-                domain: hypothesis.domain,
-                behaviour: hypothesis.behaviour,
-                range: hypothesis.range,
-            }}
-            highlighted={true}
-            {xMapping}
-            {yMapping}
-        />
-    {/if}
+    <SVG
+        {minValueDomain}
+        {maxValueDomain}
+        {minValueRange}
+        {maxValueRange}
+        {xMapping}
+        {yMapping}
+        xLabel={variableFrom}
+        yLabel={variableTo}
+    >
+        {#if headerData.showHypothesis && variableFrom == hypothesis.variableFrom && variableTo == hypothesis.variableTo}
+            <StatementComponent
+                statement={{
+                    domain: hypothesis.domain,
+                    behaviour: hypothesis.behaviour,
+                    range: hypothesis.range,
+                }}
+                highlighted={true}
+                {xMapping}
+                {yMapping}
+                {variableFrom}
+                {variableTo}
+            />
+        {/if}
 
-    {#each points as point}
-        <circle
-            r="5"
-            cx={xMapping(point.x)}
-            cy={yMapping(point.y)}
-            fill="red"
-        />
-    {/each}
-
-    {#if points && points.length > 1}
-        {#each Array(points.length - 1) as _, idx}
-            <line
-                x1={xMapping(points[idx].x)}
-                y1={yMapping(points[idx].y)}
-                x2={xMapping(points[idx + 1].x)}
-                y2={yMapping(points[idx + 1].y)}
-                style="stroke:red;stroke-width:2"
+        {#each statements as st}
+            <StatementComponent
+                statement={st}
+                {xMapping}
+                {yMapping}
+                {variableFrom}
+                {variableTo}
+                highlighted={false}
             />
         {/each}
-    {/if}
-</SVG>
+
+        {#each points as point}
+            <circle
+                r="4"
+                cx={xMapping(point.x)}
+                cy={yMapping(point.y)}
+                fill="#D85A30"
+                stroke="white"
+                stroke-width="1.5"
+            />
+        {/each}
+
+        {#if points && points.length > 1}
+            {#each Array(points.length - 1) as _, idx}
+                <line
+                    x1={xMapping(points[idx].x)}
+                    y1={yMapping(points[idx].y)}
+                    x2={xMapping(points[idx + 1].x)}
+                    y2={yMapping(points[idx + 1].y)}
+                    stroke="#D85A30"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                />
+            {/each}
+        {/if}
+    </SVG>
+</div>

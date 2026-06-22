@@ -1,44 +1,48 @@
 <script lang="ts">
     import GraphContainer from "$components/GraphContainer.svelte";
-    import * as pts from "$lib/modules/points"
+    import * as pts from "$lib/modules/points";
     import * as api from "$lib/modules/api";
-    import { headerData } from "$lib/stores/headerData.svelte";
+    import {
+        headerData,
+        restoreFromStorage,
+    } from "$lib/stores/headerData.svelte";
 
-	let { data } = $props();
+    let { data } = $props();
     const problems: ProblemData[] = $state(data.result);
-    
+
     // ===== Initialize header data ===== //
     headerData.currentProblem = problems[4];
-    headerData.normalise = async () => {problemData = await api.normalise(problemData)};
+    headerData.normalise = async () => {
+        problemData = await api.normalise(problemData);
+    };
     headerData.solve = async () => {
         if (headerData.currentProblem != null) {
             points = pts.initialiseDefaultPoints(headerData.currentProblem);
         }
-        points = await api.solve(problemData, headerData.solverType)
+        points = await api.solve(problemData, headerData.solverType);
     };
     headerData.problems = problems;
-    
-    let points: Points = $state(pts.initialiseDefaultPoints(headerData.currentProblem));
+    restoreFromStorage();
+
+    let points: Points = $state(
+        pts.initialiseDefaultPoints(headerData.currentProblem),
+    );
     $effect(() => {
         if (headerData.currentProblem != null) {
             points = pts.initialiseDefaultPoints(headerData.currentProblem);
         }
     });
-    
+
     let problemData = $derived(headerData.currentProblem);
     let scheme: Scheme = $derived(problemData.scheme);
     let hypothesis: Hypothesis = $derived(problemData.hypothesis);
-
 </script>
 
-<div 
-    id="scheme-container"
-    class="grid grid-cols-2 justify-center p-6 gap-6"
->
+<div id="scheme-container" class="grid grid-cols-2 justify-center p-6 gap-6">
     {#key problemData}
         {#each [...scheme.statements] as [variableFrom, innerMap]}
             {#each [...innerMap] as [variableTo, statements]}
-                <GraphContainer 
+                <GraphContainer
                     {variableFrom}
                     {variableTo}
                     {hypothesis}
@@ -47,7 +51,7 @@
                 />
             {/each}
         {/each}
-    {/key} 
+    {/key}
 </div>
 
 <style>

@@ -6,11 +6,7 @@ import src.normalise as norm
 import data.problems as data
 import data.flat as flat
 import data.comp as comp
-import model.problem_data as pbd
-import model.points as pts
-from model.solver import Solver
-from src.solver.solve import solve
-
+from model.problem_data import ProblemData
 
 app = FastAPI()
 
@@ -34,30 +30,16 @@ app.add_middleware(
 def get_schemes():
     problems = data.get_problems()
     problems.append(flat.get_problem(50, 0.1))
-    problems.append(comp.get_problem(50, 0.1, 3))
-    result = [pbd.serialise_problem_data(problem_data) for problem_data in problems]
+    # problems.append(comp.get_problem(50, 0.1, 3))
+    result = [problem_data.serialise() for problem_data in problems]
 
     return result
 
 
 @app.post("/api/normalise")
 def normalise(payload: dict):
-    problem_data = pbd.deserialise_problem_data(payload)
+    problem_data = ProblemData.deserialise(payload)
     problem_data = norm.normalise(problem_data)
-    result = pbd.serialise_problem_data(problem_data)
+    result = problem_data.serialise()
 
-    return result
-
-
-@app.post("/api/solve")
-def solve_(payload: dict):
-    print('hello')
-    problem_data = pbd.deserialise_problem_data(payload["problem"])
-    solver_type = Solver(payload["solver"])
-    result = solve(problem_data, solver_type)
-
-    if not result["result"]:
-        result["points"] = []
-    else:
-        result["points"] = pts.serialise_points(result["points"])
     return result

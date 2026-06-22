@@ -5,22 +5,23 @@ type LoadResult = {
     result: ProblemData[];
 };
 
-export const load = async (args): Promise<LoadResult> => {
-        const res = await fetch(`${PUBLIC_API_URL}/api/schemes`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-        });
+export const load = async ({ fetch }): Promise<LoadResult> => {
+    const res = await fetch(`${PUBLIC_API_URL}/api/schemes`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+    });
 
-        if (!res.ok) {
-            console.error("Failed to load:", await res.text());
-        }
+    if (!res.ok) {
+        const text = await res.text();
+        console.error("Failed to load:", text);
+        throw new Error(text);
+    }
 
-        const data = await res.json();
-        const problems = data.map((d: any) => transform.deserialiseProblemData(d));
-        return {
-            result: problems 
-        } 
+    const data = await res.json();
+    const problems = data.map((d: any) => transform.deserialiseProblemData(d));
+    return {
+        result: problems
+    };
 };
-

@@ -1,11 +1,14 @@
 from collections import defaultdict
 from typing_extensions import override
-from model.statement import Statement, LongStatement, deserialise_statement, serialise_statement
+from model.serialisable import Serialisable
+from model.statement import Statement, LongStatement
 
 
-class Scheme:
+class Scheme(Serialisable):
     def __init__(self, statements: list[LongStatement]):
-        self.statements: dict[tuple[str, str], list[Statement]] = defaultdict(lambda: list())
+        self.statements: dict[tuple[str, str], list[Statement]] = defaultdict(
+            lambda: list()
+        )
         self.variables: set[str] = set()
         self.order: dict[str, set[str]] = defaultdict(lambda: set())
 
@@ -13,7 +16,9 @@ class Scheme:
             self.variables.add(statement.variableFrom)
             self.variables.add(statement.variableTo)
             self.order[statement.variableFrom].add(statement.variableTo)
-            self.statements[(statement.variableFrom, statement.variableTo)].append(Statement(statement.domain, statement.behaviour, statement.range))
+            self.statements[(statement.variableFrom, statement.variableTo)].append(
+                Statement(statement.domain, statement.behaviour, statement.range)
+            )
 
         for k in self.variables:
             for i in self.variables:
@@ -27,49 +32,63 @@ class Scheme:
 
     @override
     def __str__(self):
-        result = ''
+        result = ""
         for a, b in self.statements:
-            result += f'C_{{{a}, {b}}}:\n'
+            result += f"C_{{{a}, {b}}}:\n"
             for st in self.statements[(a, b)]:
-                result += f'    {str(st)}\n'
+                result += f"    {str(st)}\n"
 
         return result
 
+    def serialise(self) -> dict:
+        return {
+            "variables": sorted(self.variables),
+            "order": [
+                {"variableFrom": var_from, "variableTos": sorted(list(var_tos))}
+                for var_from, var_tos in self.order.items()
+            ],
+            "statements": [
+                {
+                    "variableFrom": var_from,
+                    "variableTo": var_to,
+                    "statements": [
+                        st.serialise() for st in self.statements[(var_from, var_to)]
+                    ],
+                }
+                for var_from, var_to in self.statements
+            ],
+        }
 
-def serialise_scheme(scheme: Scheme) -> dict:
-    return {
-        "variables": sorted(scheme.variables),
-        "order": [
-            {
-                "variableFrom": var_from,
-                "variableTos": sorted(list(var_tos))
-            }
-            for var_from, var_tos in scheme.order.items()
-        ],
-        "statements": [
-            {
-                "variableFrom": var_from,
-                "variableTo": var_to,
-                "statements": [serialise_statement(st) for st in scheme.statements[(var_from, var_to)]]
-            }
-            for var_from, var_to in scheme.statements
-        ]
-    }
+    @staticmethod
+    def deserialise(data: dict) -> "Scheme":
+        scheme = Scheme([])
+        scheme.variables = set(data["variables"])
+
+        for entry in data["order"]:
+            var_from = entry["variableFrom"]
+
+            for var_to in entry["variableTos"]:
+                scheme.order[var_from].add(var_to)
+
+        scheme.statements
+        for entry in data["statements"]:
+            scheme.statements[(entry["variableFrom"], entry["variableTo"])] = [
+                Statement.deserialise(e) for e in entry["statements"]
+            ]
+
+        return scheme
 
 
-def deserialise_scheme(data: dict) -> Scheme:
-    scheme = Scheme([])
-    scheme.variables = set(data['variables'])
+def boundary_points(scheme: Scheme) -> dict[str, set[float]]:
+    points = defaultdict(set)
 
-    for entry in data['order']:
-        var_from = entry['variableFrom']
+    for variable_from in scheme.variables:
+        for variable_to in scheme.order[variable_from]:
+            for statement in scheme.statements[(variable_from, variable_to)]:
+                points[variable_from].add(statement.domain.start)
+                points[variable_from].add(statement.domain.end)
 
-        for var_to in entry['variableTos']:
-            scheme.order[var_from].add(var_to)
+                points[variable_to].add(statement.range.start)
+                points[variable_to].add(statement.range.end)
 
-    scheme.statements
-    for entry in data['statements']:
-        scheme.statements[(entry['variableFrom'], entry['variableTo'])] = \
-            [deserialise_statement(e) for e in entry['statements']]
-
-    return scheme
+    return points

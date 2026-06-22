@@ -1,78 +1,72 @@
 <script lang="ts">
-    const props = $props();
-    const behaviour = props.behaviour as 'mono' | 'anti' | 'const' | 'arb';
-    const highlighted: boolean = props.highlighted;
-    const size = props.size as number; 
-    let x = $state(props.x) as number;
-    let y = $state(props.y) as number;
-    const isHovered = $derived(props.isHovered) as boolean;
+    let { behaviour, size, x, y, isHovered, highlighted } = $props();
 
     const settings = {
         mono: {
-            ratio: 16.56/18.096,
+            ratio: 16.56 / 18.096,
             viewBox: "0 -720 1000 915",
             id: "behaviour-mono",
-            drawPath: "M582 697Q582 701 591 710T605 720Q607 720 630 706T697 677T795 662Q830 662 863 670T914 686T934 694Q942 694 944 685Q944 680 936 663T921 615T913 545Q913 490 927 446T956 379T970 355Q970 351 961 342T947 332Q940 332 929 349Q874 436 874 541Q874 590 878 598L832 553Q787 508 673 395T482 204Q87 -191 83 -193Q77 -195 75 -195Q67 -195 61 -189T55 -174Q55 -170 56 -168Q58 -164 453 232Q707 487 777 557T847 628Q824 623 787 623Q689 623 599 679Q582 690 582 697Z",
+            drawPath:
+                "M582 697Q582 701 591 710T605 720Q607 720 630 706T697 677T795 662Q830 662 863 670T914 686T934 694Q942 694 944 685Q944 680 936 663T921 615T913 545Q913 490 927 446T956 379T970 355Q970 351 961 342T947 332Q940 332 929 349Q874 436 874 541Q874 590 878 598L832 553Q787 508 673 395T482 204Q87 -191 83 -193Q77 -195 75 -195Q67 -195 61 -189T55 -174Q55 -170 56 -168Q58 -164 453 232Q707 487 777 557T847 628Q824 623 787 623Q689 623 599 679Q582 690 582 697Z",
         },
         anti: {
-            ratio: 16.56/18.096,
+            ratio: 16.56 / 18.096,
             viewBox: "0 -695 1000 915",
             id: "behaviour-anti",
-            drawPath: "M55 675Q55 683 60 689T75 695Q77 695 83 693Q87 691 482 296Q532 246 605 174T717 62T799 -20T859 -80T878 -97Q874 -93 874 -41Q874 64 929 151Q940 168 947 168Q951 168 960 159T970 145Q970 143 956 121T928 54T913 -45Q913 -83 920 -114T936 -163T944 -185Q942 -194 934 -194Q932 -194 914 -186T864 -170T795 -162Q743 -162 698 -176T630 -205T605 -220Q601 -220 592 -211T582 -197Q582 -187 611 -170T691 -138T787 -123Q824 -123 847 -128Q848 -128 778 -57T453 268Q58 664 56 668Q55 670 55 675Z"
+            drawPath:
+                "M55 675Q55 683 60 689T75 695Q77 695 83 693Q87 691 482 296Q532 246 605 174T717 62T799 -20T859 -80T878 -97Q874 -93 874 -41Q874 64 929 151Q940 168 947 168Q951 168 960 159T970 145Q970 143 956 121T928 54T913 -45Q913 -83 920 -114T936 -163T944 -185Q942 -194 934 -194Q932 -194 914 -186T864 -170T795 -162Q743 -162 698 -176T630 -205T605 -220Q601 -220 592 -211T582 -197Q582 -187 611 -170T691 -138T787 -123Q824 -123 847 -128Q848 -128 778 -57T453 268Q58 664 56 668Q55 670 55 675Z",
         },
         const: {
-            ratio: 9.448/18.096,
+            ratio: 9.448 / 18.096,
             viewBox: "0 -720 1000 915",
             id: "behaviour-const",
-            drawPath: "M56 237T56 250T70 270H835Q719 357 692 493Q692 494 692 496T691 499Q691 511 708 511H711Q720 511 723 510T729 506T732 497T735 481T743 456Q765 389 816 336T935 261Q944 258 944 250Q944 244 939 241T915 231T877 212Q836 186 806 152T761 85T740 35T732 4Q730 -6 727 -8T711 -11Q691 -11 691 0Q691 7 696 25Q728 151 835 230H70Q56 237 56 250Z"
+            drawPath:
+                "M56 237T56 250T70 270H835Q719 357 692 493Q692 494 692 496T691 499Q691 511 708 511H711Q720 511 723 510T729 506T732 497T735 481T743 456Q765 389 816 336T935 261Q944 258 944 250Q944 244 939 241T915 231T877 212Q836 186 806 152T761 85T740 35T732 4Q730 -6 727 -8T711 -11Q691 -11 691 0Q691 7 696 25Q728 151 835 230H70Q56 237 56 250Z",
         },
         arb: {
-            ratio: 6.048/18.096,
+            ratio: 6.048 / 18.096,
             viewBox: "0 -720 1000 915",
             id: "behaviour-arb",
-            drawPath: "M76 230Q68 230 62 237T56 250Q56 257 63 264T91 291Q102 300 108 306L159 351Q168 356 177 351L218 316L303 239L353 195Q376 214 403 239L488 316L529 351Q538 356 546 351Q548 350 594 310L638 270H848L841 278Q813 309 792 344T763 396T755 416Q755 417 778 417H801Q817 367 856 323T943 250Q895 221 856 177T801 83H778Q755 83 755 84Q755 86 762 103T791 156T841 222L848 230H737Q625 230 622 232Q620 233 599 251T558 288L537 306Q537 305 451 228T362 149Q353 146 345 149Q341 150 255 227T169 306Q167 306 129 270Q123 265 115 257T102 245T93 237T84 232T76 230Z"
-        }
+            drawPath:
+                "M76 230Q68 230 62 237T56 250Q56 257 63 264T91 291Q102 300 108 306L159 351Q168 356 177 351L218 316L303 239L353 195Q376 214 403 239L488 316L529 351Q538 356 546 351Q548 350 594 310L638 270H848L841 278Q813 309 792 344T763 396T755 416Q755 417 778 417H801Q817 367 856 323T943 250Q895 221 856 177T801 83H778Q755 83 755 84Q755 86 762 103T791 156T841 222L848 230H737Q625 230 622 232Q620 233 599 251T558 288L537 306Q537 305 451 228T362 149Q353 146 345 149Q341 150 255 227T169 306Q167 306 129 270Q123 265 115 257T102 245T93 237T84 232T76 230Z",
+        },
     };
 
-    const width = size;
-    const height = size * settings[behaviour].ratio;
-    x -= width / 2;
-    y -= height / 2;
+    const clampedSize = $derived(Math.min(size, 24));
+    const width = $derived(clampedSize);
+    // const height = $derived(clampedSize * settings[behaviour].ratio);
+    const height = $derived(clampedSize);
+    const adjustedX = $derived(x - width / 2);
+    const adjustedY = $derived(y - height / 2);
 </script>
 
-
-<svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    {width} 
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    {width}
     {height}
-    viewBox={settings[behaviour].viewBox} 
+    viewBox={settings[behaviour].viewBox}
     xmlns:xlink="http://www.w3.org/1999/xlink"
-    aria-hidden="true" 
-    {x}
-    {y}
+    aria-hidden="true"
+    x={adjustedX}
+    y={adjustedY}
 >
     <defs>
-        <path 
-            id={settings[behaviour].id}
-            d={settings[behaviour].drawPath}>
+        <path id={settings[behaviour].id} d={settings[behaviour].drawPath}>
         </path>
     </defs>
-    <g 
+    <g
         class="fill-black stroke-black"
-        class:fill-sky-600={isHovered}
-        class:stroke-sky-600={isHovered}
+        class:fill-sky-600={isHovered && !highlighted}
+        class:stroke-sky-600={isHovered && !highlighted}
         class:fill-red-700={highlighted}
         class:stroke-red-700={highlighted}
-        stroke-width="0" 
+        stroke-width="0"
         transform="scale(1,-1)"
     >
         <g data-mml-node="math">
             <g data-mml-node="mo">
-                <use 
-                    xlink:href={`#${settings[behaviour].id}`}>
-                </use>
+                <use xlink:href={`#${settings[behaviour].id}`}> </use>
             </g>
         </g>
     </g>
 </svg>
-

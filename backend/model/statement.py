@@ -1,18 +1,44 @@
-from typing import NamedTuple
+from dataclasses import dataclass
+from model.interval import Interval
+from model.behaviour import Behaviour
+from model.serialisable import Serialisable
 
-from model.interval import Interval, deserialize_interval, serialize_interval
-from model.behaviour import Behaviour, deserialize_behaviour, serialize_behaviour
 
-
-class LongStatement(NamedTuple):
+@dataclass(frozen=True)
+class LongStatement(Serialisable):
     variableFrom: str
     domain: Interval
     behaviour: Behaviour
-    range : Interval
+    range: Interval
     variableTo: str
-    
 
-class Statement:
+    def serialise(self) -> dict:
+        return {
+            "variableFrom": self.variableFrom,
+            "domain": {
+                "start": self.domain.start,
+                "end": self.domain.end,
+            },
+            "behaviour": Behaviour.serialise(self.behaviour),
+            "range": {
+                "start": self.range.start,
+                "end": self.range.end,
+            },
+            "variableTo": self.variableTo,
+        }
+
+    @staticmethod
+    def deserialise(data: dict) -> "LongStatement":
+        return LongStatement(
+            data["variableFrom"],
+            Interval(data["domain"]["start"], data["domain"]["end"]),
+            Behaviour.deserialise(data["behaviour"]),
+            Interval(data["range"]["start"], data["range"]["end"]),
+            data["variableTo"],
+        )
+
+
+class Statement(Serialisable):
     def __init__(self, domain, behaviour, range_):
         self.domain = domain
         self.behaviour = behaviour
@@ -20,62 +46,30 @@ class Statement:
 
     def __lt__(self, other):
         return (
-            (self.domain.start, self.domain.end, self.range.start, self.range.end)
-            <
-            (other.domain.start, other.domain.end, other.range.start, other.range.end)
-        )
-    
+            self.domain.start,
+            self.domain.end,
+            self.range.start,
+            self.range.end,
+        ) < (other.domain.start, other.domain.end, other.range.start, other.range.end)
+
     def __str__(self):
-        return f'Statement({self.domain}, {self.behaviour}, {self.range})'
-    
+        return f"Statement({self.domain}, {self.behaviour}, {self.range})"
+
     def __repr__(self):
         return self.__str__()
-    
-    
-def serialise_statement(st: Statement) -> dict:
-    return {
-        "domain": serialize_interval(st.domain),
-        "behaviour": serialize_behaviour(st.behaviour),
-        "range": serialize_interval(st.range)
-    }
 
+    def serialise(self) -> dict:
+        return {
+            "domain": self.domain.serialise(),
+            "behaviour": Behaviour.serialise(self.behaviour),
+            "range": self.range.serialise(),
+        }
 
-def deserialise_statement(data: dict) -> Statement:
-    return Statement(
-        domain=deserialize_interval(data["domain"]),
-        behaviour=deserialize_behaviour(data["behaviour"]),
-        range_=deserialize_interval(data["range"])
-    )
+    @staticmethod
+    def deserialise(data: dict) -> "Statement":
+        return Statement(
+            domain=Interval.deserialise(data["domain"]),
+            behaviour=Behaviour.deserialise(data["behaviour"]),
+            range_=Interval.deserialise(data["range"]),
+        )
 
-
-def serialise_long_statement(statement: LongStatement) -> dict:
-    return {
-        'variableFrom': statement.variableFrom,
-        'domain': {
-            'start': statement.domain.start,
-            'end': statement.domain.end,
-        },
-        'behaviour': serialize_behaviour(statement.behaviour),
-        'range': {
-            'start': statement.range.start,
-            'end': statement.range.end,
-        },
-        'variableTo': statement.variableTo 
-    }
-    
-    
-def deserialise_long_statement(data: dict) -> LongStatement:
-    return LongStatement(
-        data['variableFrom'],
-        Interval(
-            data['domain']['start'],
-            data['domain']['end']
-        ),
-        Behaviour(data['behaviour']),
-        Interval(
-            data['range']['start'],
-            data['range']['end']
-        ),
-        data['variableTo']
-    ) 
-    

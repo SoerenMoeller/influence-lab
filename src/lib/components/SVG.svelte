@@ -4,57 +4,86 @@
     import { svgConfig } from "$lib/modules/svgConfig";
 
     let container: HTMLDivElement;
-    const { children, ...props } = $props();
-    const xLabel = props.xLabel;
-    const yLabel = props.yLabel;
-    const xMapping = props.xMapping;
-    const yMapping = props.yMapping;
+    let { children, xLabel, yLabel, xMapping, yMapping } = $props();
     let isHovered = $state(false);
     let mouseCoords = $state({ x: 0, y: 0 });
-
     let xAxis: SVGGElement;
     let yAxis: SVGGElement;
 
     onMount(() => {
         d3.select(xAxis)
-            .call(d3.axisBottom(xMapping))
-            .selectAll(".tick text")
-            .attr("class", "text-base");
+            .call(d3.axisBottom(xMapping).ticks(5))
+            .call((g) => g.select(".domain").attr("stroke", "#d1d5db"))
+            .call((g) => g.selectAll(".tick line").attr("stroke", "#e5e7eb"))
+            .call((g) =>
+                g
+                    .selectAll(".tick text")
+                    .attr("fill", "#6b7280")
+                    .attr("font-size", "11px")
+                    .attr("font-family", "inherit"),
+            );
 
         d3.select(yAxis)
-            .call(d3.axisLeft(yMapping))
-            .selectAll(".tick text")
-            .attr("class", "text-base");
+            .call(d3.axisLeft(yMapping).ticks(5))
+            .call((g) => g.select(".domain").attr("stroke", "#d1d5db"))
+            .call((g) => g.selectAll(".tick line").attr("stroke", "#e5e7eb"))
+            .call((g) =>
+                g
+                    .selectAll(".tick text")
+                    .attr("fill", "#6b7280")
+                    .attr("font-size", "11px")
+                    .attr("font-family", "inherit"),
+            );
     });
 </script>
 
-<div
-    bind:this={container}
-    class="w-full bg-white rounded-xl shadow p-6 relative"
->
+<div bind:this={container} class="relative">
     <svg
-        class="w-full h-auto block cursor-default focus:outline-none"
+        class="w-full h-auto block cursor-crosshair focus:outline-none"
         viewBox={`0 0 ${svgConfig.width} ${svgConfig.height}`}
         preserveAspectRatio="xMidYMin meet"
-        role="button"
-        tabindex="0"
+        role="img"
+        aria-label="{xLabel} vs {yLabel}"
         onmouseover={() => (isHovered = true)}
         onmouseout={() => (isHovered = false)}
         onfocus={() => {}}
         onblur={() => {}}
         onmousemove={(evt) => {
             const svg = evt.currentTarget as SVGSVGElement;
-            const pt = svg.createSVGPoint();
-            pt.x = evt.clientX;
-            pt.y = evt.clientY;
-            const svgP = pt.matrixTransform(svg.getScreenCTM()?.inverse());
-
+            const rect = svg.getBoundingClientRect();
+            const scaleX = svgConfig.width / rect.width;
+            const scaleY = svgConfig.height / rect.height;
+            const svgX = (evt.clientX - rect.left) * scaleX;
+            const svgY = (evt.clientY - rect.top) * scaleY;
             mouseCoords = {
-                x: xMapping.invert(svgP.x),
-                y: yMapping.invert(svgP.y),
+                x: xMapping.invert(svgX),
+                y: yMapping.invert(svgY),
             };
         }}
+        overflow="visible"
     >
+        <!-- Subtle grid lines -->
+        {#each xMapping.ticks(5) as tick}
+            <line
+                x1={xMapping(tick)}
+                y1={svgConfig.marginTop}
+                x2={xMapping(tick)}
+                y2={svgConfig.height - svgConfig.marginBottom}
+                stroke="#f3f4f6"
+                stroke-width="1"
+            />
+        {/each}
+        {#each yMapping.ticks(5) as tick}
+            <line
+                x1={svgConfig.marginLeft}
+                y1={yMapping(tick)}
+                x2={svgConfig.width - svgConfig.marginRight}
+                y2={yMapping(tick)}
+                stroke="#f3f4f6"
+                stroke-width="1"
+            />
+        {/each}
+
         <g
             transform={`translate(0,${svgConfig.height - svgConfig.marginBottom})`}
             bind:this={xAxis}
@@ -64,35 +93,33 @@
             bind:this={yAxis}
         />
 
+        <!-- Axis labels -->
         <text
             x={svgConfig.width / 2}
-            y={svgConfig.height - svgConfig.marginBottom / 4}
-            fill="black"
-            class="text-2xl"
+            y={svgConfig.height - 4}
+            fill="#9ca3af"
+            font-size="12"
+            font-family="inherit"
+            text-anchor="middle">{xLabel}</text
         >
-            {xLabel}
-        </text>
-
         <text
-            x={svgConfig.marginLeft}
-            y={svgConfig.height / 2 - svgConfig.marginLeft / 4}
-            fill="black"
-            class="text-2xl"
+            fill="#9ca3af"
+            font-size="12"
+            font-family="inherit"
             text-anchor="middle"
-            transform={`rotate(-90, ${svgConfig.marginLeft / 2}, ${svgConfig.height / 2})`}
+            transform={`rotate(-90) translate(${-svgConfig.height / 2}, ${svgConfig.marginLeft / 3})`}
+            >{yLabel}</text
         >
-            {yLabel}
-        </text>
 
         {@render children()}
     </svg>
 
     {#if isHovered}
         <div
-            class="absolute bottom-4 left-4 bg-gray-200 text-gray-900 p-2 rounded
-                shadow text-base"
+            class="absolute bottom-2 left-2 bg-white border border-gray-100
+            text-gray-500 text-xs px-2 py-1 rounded-md pointer-events-none"
         >
-            x: {mouseCoords.x.toFixed(2)}, y: {mouseCoords.y.toFixed(2)}
+            {mouseCoords.x.toFixed(2)}, {mouseCoords.y.toFixed(2)}
         </div>
     {/if}
 </div>
