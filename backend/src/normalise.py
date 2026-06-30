@@ -11,41 +11,32 @@ def normalise(problem_data: ProblemData) -> ProblemData:
         raise ValueError("Only one scheme version is allowed for normalisation.")
 
     current_scheme = problem_data.schemeVersions[0]
-    current_scheme.statements = {
-        (a, b): normalise_subscheme(problem_data, current_scheme, a, b)
-        for (a, b) in current_scheme.statements
-    }
+    for a, b in current_scheme.statements:
+        current_scheme.statements[(a, b)] = normalise_subscheme(current_scheme, a, b)
+
     return problem_data
 
 
 def normalise_subscheme(
-    problem_data: ProblemData, current_scheme: Scheme, var_from: str, var_to: str
+    current_scheme: Scheme, var_from: str, var_to: str
 ) -> list[Statement]:
-    statements = current_scheme.statements[(var_from, var_to)]
-    transforms = [overlap_free, minimal_height]
+    bounds: list[float] = sorted(scheme.boundary_points(current_scheme)[var_from])
 
-    for fn in transforms:
-        statements = fn(problem_data, var_from, statements)
-        print(f"After {fn.__name__}:\n{statements}\n")
+    statements = current_scheme.statements[(var_from, var_to)]
+    # ToDo: Remove gaps
+    statements = overlap_free(statements, bounds)
+    statements = minimal_height(statements)
 
     return statements
 
 
-def overlap_free(
-    problem_data: ProblemData,
-    current_scheme: Scheme,
-    var_from: str,
-    statements: list[Statement],
-) -> list[Statement]:
-    bounds = sorted(scheme.boundary_points(current_scheme)[var_from])
-
+def overlap_free(statements: list[Statement], bounds: list[float]) -> list[Statement]:
     result = []
     for i in range(len(bounds)):
         x = bounds[i]
         y = bounds[i]
 
         overlapping = rules.containing(statements, Interval(x, y))
-        print(x, y, overlapping)
         st = rules.intersect(overlapping, Interval(x, y))
 
         if st is not None:
@@ -63,30 +54,37 @@ def overlap_free(
     return result
 
 
-def minimal_height(
-    problem_data: ProblemData, var_from: str, sts: list[Statement]
-) -> list[Statement]:
-    i = 0
-    while 0 <= i < len(sts) - 1:
-        go_left = False
+def minimal_height(statements: list[Statement]) -> list[Statement]:
+    changes = True
+    while changes:
+        changes = False
 
-        assert (
-            sts[i].domain.end == sts[i + 1].domain.start
-        ), "Gap found while normalising"
+        for i in range(len(statements) - 1):
+            current = statements[i]
+            next_st = statements[i + 1]
 
-        new_st = rules.left_rule(sts[i], sts[i + 1])
-        if new_st is not None:
-            go_left = True
-            sts[i] = new_st
+            new_st = rules.left_rule(current, next_st)
+            if new_st is not None:
+                statements[i] = new_st
+                changes = True
 
-        new_st = rules.right_rule(sts[i], sts[i + 1])
-        if new_st is not None:
-            go_left = True
-            sts[i + 1] = new_st
+            new_st = rules.right_rule(current, next_st)
+            if new_st is not None:
+                statements[i + 1] = new_st
+                changes = True
 
-        if go_left:
-            i -= 1
-        else:
-            i += 1
+        for i in range(len(statements), -1):
+            current = statements[i]
+            next_st = statements[i - 1]
 
-    return sts
+            new_st = rules.left_rule(current, next_st)
+            if new_st is not None:
+                statements[i] = new_st
+                changes = True
+
+            new_st = rules.right_rule(current, next_st)
+            if new_st is not None:
+                statements[i + 1] = new_st
+                changes = True
+
+    return statements
