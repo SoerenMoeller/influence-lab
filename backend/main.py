@@ -39,7 +39,8 @@ def get_schemes():
 @app.post("/api/normalise")
 def normalise(payload: dict):
     problem_data = ProblemData.deserialise(payload)
-    problem_data = norm.normalise(problem_data)
+
+    # problem_data = norm.normalise(problem_data)
     result = problem_data.serialise()
 
     return result

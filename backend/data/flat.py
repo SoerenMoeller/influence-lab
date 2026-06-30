@@ -24,7 +24,7 @@ def get_problem(size_domain: int, range_offset: float) -> ProblemData:
     statements = list(ets.collect_statements(parameters, fn, pts, "x", "y"))
 
     return ProblemData(
-        Scheme(statements),
+        [Scheme(statements)],
         LongStatement("x", Interval(0, 2 * pi), Behaviour.CONST, Interval(-1, 1), "y"),
     )
 

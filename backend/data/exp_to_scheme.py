@@ -16,8 +16,7 @@ class BenchmarkParameters:
     statement_width: float
     range_offset: float
     size_domain: float
-    
-    
+
 
 def points_to_piecewise_linear(points: list[tuple[float, float]]):
     if not points:
@@ -78,4 +77,3 @@ def sample_points(parameters: BenchmarkParameters, fn) -> list[tuple[float, floa
             for i in range(parameters.size_domain + 1)
         ]
     ]
-

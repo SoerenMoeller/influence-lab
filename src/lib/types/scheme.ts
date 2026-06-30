@@ -1,18 +1,23 @@
-export function serialiseProblemData(problemData: ProblemData): ProblemDataSerialsed {
-    return {
-        scheme: serialiseScheme(problemData.scheme),
-        hypothesis: problemData.hypothesis
-    }
+type VariableMap<T> = Map<string, Map<string, T>>;
+
+export type Scheme = {
+    statements: VariableMap<Statement[]>;
+    variables:  Set<string>;
+    order:      Map<string, Set<string>>; 
 }
 
-
-export function deserialiseProblemData(data: ProblemDataSerialsed): ProblemData {
-    return {
-        scheme: deserialiseScheme(data.scheme),
-        hypothesis: data.hypothesis
-    }
-}
-
+export type SchemeSerialised = {
+    variables: string[];
+    order: {
+        variableFrom: string;
+        variableTos:  string[];
+    }[];
+    statements: {
+        variableFrom: string;
+        variableTo:   string;
+        statements:   Statement[];
+    }[];
+};
 
 export function serialiseScheme(scheme: Scheme): SchemeSerialised {
     const variables = Array.from(scheme.variables);
@@ -36,7 +41,6 @@ export function serialiseScheme(scheme: Scheme): SchemeSerialised {
     };
 }
 
-
 export function deserialiseScheme(data: SchemeSerialised): Scheme {
     const variables = new Set(data.variables);
     const order = new Map(data.order.map(({ variableFrom, variableTos }) => [variableFrom, new Set(variableTos)]));
@@ -54,33 +58,4 @@ export function deserialiseScheme(data: SchemeSerialised): Scheme {
         order,
         statements,
     };
-}
-
-export function serialisePoints(points: Points): PointsSerialised {
-    const serialized: PointsSerialised = [];
-
-    for (const [variableFrom, variableToPoints] of points.entries()) {
-        for (const [variableTo, pointArray] of variableToPoints.entries()) {
-            serialized.push({
-                variableFrom,
-                variableTo,
-                points: pointArray
-            });
-        }
-    }
-
-    return serialized;    
-}
-
-export function deserialisePoints(data: PointsSerialised): Points {
-    const result: Points = new Map();
-
-    for (const entry of data) {
-        if (!result.has(entry.variableFrom)) {
-            result.set(entry.variableFrom, new Map());
-        }
-        result.get(entry.variableFrom)!.set(entry.variableTo, entry.points);
-    }
-    
-    return result;
 }

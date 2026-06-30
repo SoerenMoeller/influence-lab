@@ -1,22 +1,27 @@
 from model.interval import Interval
 from model.statement import Statement
 from model.problem_data import ProblemData
+from model.scheme import Scheme
 import model.scheme as scheme
 import src.rules as rules
 
 
 def normalise(problem_data: ProblemData) -> ProblemData:
-    problem_data.scheme.statements = {
-        (a, b): normalise_subscheme(problem_data, a, b)
-        for (a, b) in problem_data.scheme.statements
+    if len(problem_data.schemeVersions) != 1:
+        raise ValueError("Only one scheme version is allowed for normalisation.")
+
+    current_scheme = problem_data.schemeVersions[0]
+    current_scheme.statements = {
+        (a, b): normalise_subscheme(problem_data, current_scheme, a, b)
+        for (a, b) in current_scheme.statements
     }
     return problem_data
 
 
 def normalise_subscheme(
-    problem_data: ProblemData, var_from: str, var_to: str
+    problem_data: ProblemData, current_scheme: Scheme, var_from: str, var_to: str
 ) -> list[Statement]:
-    statements = problem_data.scheme.statements[(var_from, var_to)]
+    statements = current_scheme.statements[(var_from, var_to)]
     transforms = [overlap_free, minimal_height]
 
     for fn in transforms:
@@ -27,9 +32,12 @@ def normalise_subscheme(
 
 
 def overlap_free(
-    problem_data: ProblemData, var_from: str, statements: list[Statement]
+    problem_data: ProblemData,
+    current_scheme: Scheme,
+    var_from: str,
+    statements: list[Statement],
 ) -> list[Statement]:
-    bounds = sorted(scheme.boundary_points(problem_data.scheme)[var_from])
+    bounds = sorted(scheme.boundary_points(current_scheme)[var_from])
 
     result = []
     for i in range(len(bounds)):
